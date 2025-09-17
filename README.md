@@ -32,6 +32,12 @@
 ### Leaderboard Calculation Engine
 - Background job processing that recalculates rankings, updates seasonal leaderboards, and maintains historical data
 
+### In-Game Leaderboard
+- Background job that calculates score based on the provided answer and the time of given answer. This leaderboard will be shown during the game (every 3rd round) and when the game ends.
+
+### Podium
+- When the game ends not ony leaderboard is shown, but in addition to that a special animation is being shown in order to showcase TOP 3 players that performed the best.
+
 ### Achievement Processing Service
 - Event-driven service that monitors player actions and awards achievements/badges based on defined criteria
 

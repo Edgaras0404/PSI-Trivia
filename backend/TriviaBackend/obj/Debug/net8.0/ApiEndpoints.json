@@ -1,0 +1,23 @@
+[
+  {
+    "ContainingType": "TriviaBackend.Controllers.QuestionController",
+    "Method": "Get",
+    "RelativePath": "Question",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "TriviaBackend.Models.Question",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "Test"
+  }
+]

@@ -1,12 +1,18 @@
 [
   {
     "ContainingType": "TriviaBackend.Controllers.QuestionController",
-    "Method": "Get",
-    "RelativePath": "Question",
+    "Method": "GetQuestionByID",
+    "RelativePath": "Question/{ID}",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
-    "Parameters": [],
+    "Parameters": [
+      {
+        "Name": "ID",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
     "ReturnTypes": [
       {
         "Type": "TriviaBackend.Models.Question",
@@ -17,7 +23,6 @@
         ],
         "StatusCode": 200
       }
-    ],
-    "EndpointName": "Test"
+    ]
   }
 ]

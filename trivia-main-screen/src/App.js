@@ -18,13 +18,29 @@ const TriviaGame = () => {
 
   // this will later be fetched from an API, now it's hardcoded for simplicity
 
-  const mockQuestion = {
-    id: 1,
-    time_s: 5,
-    question: "What is the capital of France?",
-    options: ["London", "Berlin", "Paris", "Madrid"],
-    correctAnswer: "Paris"
-  };
+  const mockQuestion = [
+    {
+      id: 1,
+      time_s: 5,
+      question: "What is the capital of France?",
+      options: ["London", "Berlin", "Paris", "Madrid"],
+      correctAnswer: "Paris"
+    },
+    {
+      id: 2,
+      time_s: 3,
+      question: "0/1 = ?",
+      options: ["0", "1", "+inf", "-inf"],
+      correctAnswer: "0"
+    },
+    {
+      id: 3,
+      time_s: 10,
+      question: "Which color is a mix of 2 separate wavelengths?",
+      options: ["Purple", "Yellow", "Blue", "Pink"],
+      correctAnswer: "Pink"
+    }
+  ];
 
   const handleStartGame = () => {
     setGameState('nickname');
@@ -36,15 +52,27 @@ const TriviaGame = () => {
       return;
     }
     setGameState('playing');
-    setCurrentQuestion(mockQuestion);
+    setCurrentQuestion(mockQuestion[0]);
     setLeaderboard((prev) => [...prev, { name: playerName, score: 0 }]);
   };
 
   const handleAnswerSubmit = () => {
     if (selectedAnswer === currentQuestion.correctAnswer) {
       setScore(score + 1);
+      setLeaderboard(
+        prev => prev.map(user =>
+          user.name === playerName ? { ...user, score: user.score + 1 } : user
+        )
+      );
     }
-    setGameState('finished');
+
+    if (currentQuestion.id == mockQuestion.length) {
+      setGameState('finished');
+      handleShowLeaderboard();
+    } else {
+      setCurrentQuestion(mockQuestion[currentQuestion.id]);
+      setGameState('playing');
+    }
   };
 
   const resetGame = () => {
@@ -63,7 +91,6 @@ const TriviaGame = () => {
       // Sort score desc
       return updated.sort((a, b) => b.score - a.score);
     });
-    setGameState('leaderboard');
   };
 
   //decrease timer
@@ -80,7 +107,7 @@ const TriviaGame = () => {
   // When timer = 0 show leaderboard
   useEffect(() => {
     if (gameState === 'playing' && timer === 0) {
-      handleShowLeaderboard();
+      handleAnswerSubmit();
     }
   }, [timer, gameState]);
 
@@ -178,23 +205,6 @@ const TriviaGame = () => {
 
         {/* Finished Screen */}
         {gameState === 'finished' && (
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Game Over!</h2>
-            <div className="mb-6">
-              <p className="text-lg text-gray-700 mb-2">Final Score</p>
-              <p className="text-3xl font-bold text-blue-600">{score}</p>
-            </div>
-            <button
-              onClick={resetGame}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-            >
-              Play Again
-            </button>
-          </div>
-        )}
-
-        {/* Leaderboard Screen */}
-        {gameState === 'leaderboard' && (
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Leaderboard</h2>
             <table className="w-full mb-6">

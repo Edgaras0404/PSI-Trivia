@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using TriviaGame.Models;
+using TriviaBackend.Models;
 
-namespace TriviaGame.Services
+namespace TriviaBackend.Services
 {
     public class QuestionService
     {

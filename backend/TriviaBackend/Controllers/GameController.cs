@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Models;
+using TriviaBackend.Services;
 
 namespace TriviaBackend.Controllers
 {
@@ -23,7 +24,7 @@ namespace TriviaBackend.Controllers
         {
             try
             {
-                QuestionCategory[] selectedCategories = null;
+                QuestionCategory[]? selectedCategories = null;
                 if (request.Categories != null && request.Categories.Length > 0)
                 {
                     selectedCategories = request.Categories;
@@ -80,7 +81,7 @@ namespace TriviaBackend.Controllers
             try
             {
                 var players = _gameEngine.GetPlayers();
-                return Ok(players.Select(p => new { p.Id, p.Name, p.IsActive, p.CurrentGameScore }));
+                return Ok(players.Select(p => new { p.Id, p.Name, p.IsActive, p.CurrentScore }));
             }
             catch (Exception ex)
             {
@@ -127,7 +128,7 @@ namespace TriviaBackend.Controllers
                     difficulty = question.Difficulty,
                     points = question.Points,
                     timeLimit = question.TimeLimit,
-                    text = question.Text,
+                    text = question.QuestionText,
                     options = question.Options.Select((option, index) => new { index = index + 1, text = option })
                 });
             }
@@ -198,8 +199,8 @@ namespace TriviaBackend.Controllers
                     rank = index + 1,
                     playerId = player.Id,
                     playerName = player.Name,
-                    score = player.CurrentGameScore,
-                    correctAnswers = player.CorrectAnswersInGame,
+                    score = player.CurrentScore,
+                    correctAnswers = player.CorrectAnswers,
                     medal = index switch
                     {
                         0 => "🥇",
@@ -221,7 +222,7 @@ namespace TriviaBackend.Controllers
         {
             try
             {
-                var categoryStats = _questionService.GetQuestionsByCategory();
+                var categoryStats = _questionService.GetQuestionCountByCategory();
                 return Ok(categoryStats.Select(kvp => new {
                     category = kvp.Key,
                     questionCount = kvp.Value

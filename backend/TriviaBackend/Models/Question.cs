@@ -5,14 +5,17 @@
         Science,
         History,
         Sports,
-        Geography
+        Geography,
+        Literature
     }
+
     public enum DifficultyLevel
     {
         Easy = 1,
         Medium = 2,
         Hard = 3
     }
+
     public enum GameStatus
     {
         Waiting,
@@ -20,16 +23,18 @@
         Finished,
         Paused
     }
-    public enum AnswerStatus
+
+    public enum AnswerResult
     {
         Correct,
         Incorrect,
-        Timesup
+        TimeUp
     }
+
     public class TriviaQuestion
     {
         public int Id { get; set; }
-        public string QuestionText { get; set; }
+        public string QuestionText { get; set; } = string.Empty;
         public List<string> Options { get; set; }
         public int CorrectAnswerIndex { get; set; }
         public QuestionCategory Category { get; set; }
@@ -42,7 +47,10 @@
             Options = new List<string>();
         }
     }
-    public record PlayerAnswer(int QuestionId, int SelectedOptionIndex, AnswerStatus Status, int PointsEarned);
+
+    public record GameAnswer(int PlayerId, int QuestionId, int SelectedOptionIndex, DateTime SubmissionTime);
+
+    public record PlayerAnswer(int QuestionId, int SelectedOptionIndex, AnswerResult Status, int PointsEarned);
 
     public struct GameSettings
     {
@@ -50,24 +58,27 @@
         public int QuestionsPerGame { get; set; }
         public int DefaultTimeLimit { get; set; }
         public bool AllowLateJoining { get; set; }
-        public QuestionCategory[] questionCategories { get; set; }
+        public QuestionCategory[] QuestionCategories { get; set; }
 
         public GameSettings(int MaxPlayers = 10, int QuestionsPerGame = 10, int DefaultTimeLimit = 30)
         {
-            MaxPlayers = MaxPlayers;
-            QuestionsPerGame = QuestionsPerGame;
-            DefaultTimeLimit = DefaultTimeLimit;
-            AllowLateJoining = false;
-            questionCategories = Enum.GetValues<QuestionCategory>();
+            this.MaxPlayers = MaxPlayers;
+            this.QuestionsPerGame = QuestionsPerGame;
+            this.DefaultTimeLimit = DefaultTimeLimit;
+            this.AllowLateJoining = false;
+            this.QuestionCategories = Enum.GetValues<QuestionCategory>();
         }
-        public class GamePlayer
-        {
-            public int Id { get; set; }
-            public string Name { get; set; }
-            public int CurrentScore { get; set; }
-            public int CorrectAnswers { get; set; }
-            public bool IsActive { get; set; }
-        }
+    }
 
+    public class GamePlayer
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int CurrentScore { get; set; } = 0;
+        public int CorrectAnswers { get; set; } = 0;
+        public bool IsActive { get; set; } = true;
+        public DateTime JoinedGameAt { get; set; }
+        public int CurrentGameScore { get; set; } = 0;
+        public int CorrectAnswersInGame { get; set; } = 0;
     }
 }

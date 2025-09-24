@@ -11,22 +11,20 @@ namespace TriviaBackend.Services
         private List<GamePlayer> _players;
         private Queue<TriviaQuestion> _gameQuestions;
         private Dictionary<int, List<GameAnswer>> _gameAnswers;
-        private TriviaQuestion _currentQuestion;
+        private TriviaQuestion? _currentQuestion;
         private DateTime _questionStartTime;
         private GameSettings _settings;
 
         public GameStatus Status { get; private set; }
         public int CurrentQuestionNumber { get; private set; }
         public string GameId { get; private set; }
-        public TriviaQuestion CurrentQuestion => _currentQuestion;
+        public TriviaQuestion? CurrentQuestion => _currentQuestion;
+        public GameSettings Settings => _settings;
 
         public TimeSpan TimeRemaining => _currentQuestion != null ?
             TimeSpan.FromSeconds(_currentQuestion.TimeLimit) - (DateTime.Now - _questionStartTime) : TimeSpan.Zero;
 
-        // Named and optional arguments in constructor
-        public GameEngine(QuestionService questionService,
-                         GameSettings settings = default,
-                         string gameId = null)
+        public GameEngine(QuestionService questionService, GameSettings settings = default, string? gameId = null)
         {
             _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
             _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;
@@ -39,7 +37,6 @@ namespace TriviaBackend.Services
             CurrentQuestionNumber = 0;
         }
 
-        // Method with optional parameters
         public bool AddPlayer(string playerName, int? playerId = null, DateTime? joinTime = null)
         {
             if (_players.Count >= _settings.MaxPlayers)
@@ -53,8 +50,11 @@ namespace TriviaBackend.Services
                 Id = playerId ?? GeneratePlayerId(),
                 Name = playerName,
                 JoinedGameAt = joinTime ?? DateTime.Now,
+                CurrentScore = 0,
+                CorrectAnswers = 0,
                 CurrentGameScore = 0,
-                CorrectAnswersInGame = 0
+                CorrectAnswersInGame = 0,
+                IsActive = true
             };
 
             _players.Add(player);
@@ -62,7 +62,7 @@ namespace TriviaBackend.Services
             return true;
         }
 
-        public bool StartGame(QuestionCategory[] categories = null, DifficultyLevel? maxDifficulty = null)
+        public bool StartGame(QuestionCategory[]? categories = null, DifficultyLevel? maxDifficulty = null)
         {
             if (_players.Count == 0 || Status != GameStatus.Waiting)
                 return false;
@@ -72,7 +72,6 @@ namespace TriviaBackend.Services
             if (questions.Count == 0)
                 return false;
 
-            // Iterating through collection to populate game questions
             _gameQuestions.Clear();
             foreach (var question in questions)
             {
@@ -119,8 +118,15 @@ namespace TriviaBackend.Services
             var timeBonus = isCorrect ? Math.Max(0, _currentQuestion.TimeLimit - (int)(submissionTime - _questionStartTime).TotalSeconds) : 0;
             var pointsEarned = isCorrect ? _currentQuestion.Points + timeBonus : 0;
 
+            // Update both score tracking properties
+            player.CurrentScore += pointsEarned;
             player.CurrentGameScore += pointsEarned;
-            if (isCorrect) player.CorrectAnswersInGame++;
+
+            if (isCorrect)
+            {
+                player.CorrectAnswers++;
+                player.CorrectAnswersInGame++;
+            }
 
             var answer = new GameAnswer(playerId, _currentQuestion.Id, selectedAnswer, submissionTime);
             _gameAnswers[playerId].Add(answer);
@@ -128,13 +134,12 @@ namespace TriviaBackend.Services
             return isCorrect ? AnswerResult.Correct : AnswerResult.Incorrect;
         }
 
-        // Getting current game leaderboard (LINQ usage)
         public List<GamePlayer> GetCurrentGameLeaderboard()
         {
             return _players
                 .Where(p => p.IsActive)
-                .OrderByDescending(p => p.CurrentGameScore)
-                .ThenByDescending(p => p.CorrectAnswersInGame)
+                .OrderByDescending(p => p.CurrentScore)
+                .ThenByDescending(p => p.CorrectAnswers)
                 .ToList();
         }
 

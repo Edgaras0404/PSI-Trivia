@@ -1,28 +1,110 @@
 [
   {
-    "ContainingType": "TriviaBackend.Controllers.QuestionController",
-    "Method": "GetQuestionByID",
-    "RelativePath": "Question/{ID}",
-    "HttpMethod": "GET",
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "SubmitAnswer",
+    "RelativePath": "api/Game/answer",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "ID",
-        "Type": "System.Int32",
+        "Name": "request",
+        "Type": "TriviaBackend.Controllers.SubmitAnswerRequest",
         "IsRequired": true
       }
     ],
-    "ReturnTypes": [
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "GetAvailableCategories",
+    "RelativePath": "api/Game/categories",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "GetCurrentQuestion",
+    "RelativePath": "api/Game/current-question",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "GetLeaderboard",
+    "RelativePath": "api/Game/leaderboard",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "NextQuestion",
+    "RelativePath": "api/Game/next-question",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "AddPlayer",
+    "RelativePath": "api/Game/players",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
       {
-        "Type": "TriviaBackend.Models.Question",
-        "MediaTypes": [
-          "text/plain",
-          "application/json",
-          "text/json"
-        ],
-        "StatusCode": 200
+        "Name": "request",
+        "Type": "TriviaBackend.Controllers.AddPlayerRequest",
+        "IsRequired": true
       }
-    ]
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "GetPlayers",
+    "RelativePath": "api/Game/players",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "StartGame",
+    "RelativePath": "api/Game/start",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "TriviaBackend.Controllers.StartGameRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "TriviaBackend.Controllers.GameController",
+    "Method": "GetGameStatus",
+    "RelativePath": "api/Game/status",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
   }
 ]

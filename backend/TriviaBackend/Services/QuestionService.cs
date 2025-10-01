@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using TriviaGame.Models;
+using TriviaBackend.Models;
 
-namespace TriviaGame.Services
+namespace TriviaBackend.Services
 {
     public class QuestionService
     {
@@ -17,7 +17,6 @@ namespace TriviaGame.Services
             LoadDefaultQuestions();
         }
 
-        // Data load from file
         public bool LoadQuestionsFromFile(string filePath)
         {
             try
@@ -41,8 +40,7 @@ namespace TriviaGame.Services
             return false;
         }
 
-        // Question filtering and retrieval (using LINQ)
-        public List<TriviaQuestion> GetQuestions(QuestionCategory[] categories = null,
+        public List<TriviaQuestion> GetQuestions(QuestionCategory[]? categories = null,
                                                DifficultyLevel? maxDifficulty = null,
                                                int count = 10)
         {
@@ -58,13 +56,11 @@ namespace TriviaGame.Services
                 query = query.Where(q => q.Difficulty <= maxDifficulty.Value);
             }
 
-            // Randomize and take specified question count
             return query.OrderBy(q => Guid.NewGuid())
                        .Take(count)
                        .ToList();
         }
 
-        // Collections usage
         public Dictionary<QuestionCategory, int> GetQuestionCountByCategory()
         {
             var categoryCounts = new Dictionary<QuestionCategory, int>();
@@ -95,7 +91,7 @@ namespace TriviaGame.Services
                 new TriviaQuestion
                 {
                     Id = 1,
-                    Text = "What is the capital of Finland?",
+                    QuestionText = "What is the capital of Finland?",
                     Options = new List<string> { "Stockholm", "Vilnius", "Helsinki", "Madrid" },
                     CorrectAnswerIndex = 2,
                     Category = QuestionCategory.Geography,
@@ -104,7 +100,7 @@ namespace TriviaGame.Services
                 new TriviaQuestion
                 {
                     Id = 2,
-                    Text = "Who wrote 'Romeo and Juliet'?",
+                    QuestionText = "Who wrote 'Romeo and Juliet'?",
                     Options = new List<string> { "Charles Dickens", "William Shakespeare", "Jane Austen", "Mark Twain" },
                     CorrectAnswerIndex = 1,
                     Category = QuestionCategory.Literature,
@@ -113,7 +109,7 @@ namespace TriviaGame.Services
                 new TriviaQuestion
                 {
                     Id = 3,
-                    Text = "What is the chemical symbol for helium?",
+                    QuestionText = "What is the chemical symbol for helium?",
                     Options = new List<string> { "Pb", "O", "He", "Ag" },
                     CorrectAnswerIndex = 2,
                     Category = QuestionCategory.Science,
@@ -122,7 +118,7 @@ namespace TriviaGame.Services
                 new TriviaQuestion
                 {
                     Id = 4,
-                    Text = "In which year did World War II end?",
+                    QuestionText = "In which year did World War II end?",
                     Options = new List<string> { "1944", "1945", "1946", "1947" },
                     CorrectAnswerIndex = 1,
                     Category = QuestionCategory.History,
@@ -131,7 +127,7 @@ namespace TriviaGame.Services
                 new TriviaQuestion
                 {
                     Id = 5,
-                    Text = "Which sport is played at Wimbledon?",
+                    QuestionText = "Which sport is played at Wimbledon?",
                     Options = new List<string> { "Football", "Cricket", "Tennis", "Golf" },
                     CorrectAnswerIndex = 2,
                     Category = QuestionCategory.Sports,

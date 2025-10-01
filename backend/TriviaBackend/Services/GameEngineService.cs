@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TriviaBackend.Models;
+using TriviaBackend.Models.Enums;
+using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Records;
 
 namespace TriviaBackend.Services
 {

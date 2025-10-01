@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Models;
 using TriviaBackend.Services;
+using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Enums;
 
 namespace TriviaBackend.Controllers
 {

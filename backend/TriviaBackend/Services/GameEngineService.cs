@@ -5,7 +5,7 @@ using TriviaBackend.Models;
 
 namespace TriviaBackend.Services
 {
-    public class GameEngine
+    public class GameEngineService
     {
         private readonly QuestionService _questionService;
         private List<GamePlayer> _players;
@@ -24,7 +24,7 @@ namespace TriviaBackend.Services
         public TimeSpan TimeRemaining => _currentQuestion != null ?
             TimeSpan.FromSeconds(_currentQuestion.TimeLimit) - (DateTime.Now - _questionStartTime) : TimeSpan.Zero;
 
-        public GameEngine(QuestionService questionService, GameSettings settings = default, string? gameId = null)
+        public GameEngineService(QuestionService questionService, GameSettings settings = default, string? gameId = null)
         {
             _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
             _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;

@@ -426,5 +426,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-/backend/TriviaBackend/bin/
-/backend/TriviaBackend/obj/project.assets.json
+
+backend/TriviaBackend/bin/
+backend/TriviaBackend/obj/

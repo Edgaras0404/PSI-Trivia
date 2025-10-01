@@ -426,4 +426,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-/backend/TriviaBackend/bin/Debug/net8.0/appsettings.Development.json
+/backend/TriviaBackend/bin/
+/backend/TriviaBackend/obj/project.assets.json

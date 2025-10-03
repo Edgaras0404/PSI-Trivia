@@ -1,4 +1,8 @@
 
+using Microsoft.EntityFrameworkCore;
+using System;
+using TriviaBackend.Data;
+
 namespace TriviaBackend
 {
     public class Program
@@ -7,10 +11,10 @@ namespace TriviaBackend
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            builder.Services.AddDbContext<TriviaDbContext>(options =>
+    options.UseNpgsql("DefaultConnection"));
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 

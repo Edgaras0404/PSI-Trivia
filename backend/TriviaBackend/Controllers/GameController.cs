@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Models;
 using TriviaBackend.Services;
+using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Enums;
 
 namespace TriviaBackend.Controllers
 {
@@ -8,14 +10,14 @@ namespace TriviaBackend.Controllers
     [Route("api/[controller]")]
     public class GameController : ControllerBase
     {
-        private readonly GameEngine _gameEngine;
+        private readonly GameEngineService _gameEngine;
         private readonly QuestionService _questionService;
 
         public GameController()
         {
             _questionService = new QuestionService();
             var settings = new GameSettings(MaxPlayers: 5, QuestionsPerGame: 10, DefaultTimeLimit: 20);
-            _gameEngine = new GameEngine(_questionService, settings);
+            _gameEngine = new GameEngineService(_questionService, settings);
         }
 
         // POST: api/game/start
@@ -195,7 +197,8 @@ namespace TriviaBackend.Controllers
             {
                 var leaderboard = _gameEngine.GetCurrentGameLeaderboard();
 
-                return Ok(leaderboard.Select((player, index) => new {
+                return Ok(leaderboard.Select((player, index) => new
+                {
                     rank = index + 1,
                     playerId = player.Id,
                     playerName = player.Name,
@@ -223,7 +226,8 @@ namespace TriviaBackend.Controllers
             try
             {
                 var categoryStats = _questionService.GetQuestionCountByCategory();
-                return Ok(categoryStats.Select(kvp => new {
+                return Ok(categoryStats.Select(kvp => new
+                {
                     category = kvp.Key,
                     questionCount = kvp.Value
                 }));

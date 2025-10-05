@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TriviaGame.Models;
+using TriviaBackend.Models;
 
-namespace TriviaGame.Services
+namespace TriviaBackend.Services
 {
     public class GameEngine
     {

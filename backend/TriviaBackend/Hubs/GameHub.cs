@@ -1,9 +1,7 @@
-using micorosoft.aspnetcore.signalr;
 using Microsoft.AspNetCore.SignalR;
-using triviabackend.models;
-using triviabackend.services;
+using NuGet.Configuration;
 using TriviaBackend.Models;
-using TriviaGame.Services;
+using TriviaBackend.Services;
 
 namespace TriviaBackend.Hubs
 {
@@ -20,7 +18,7 @@ namespace TriviaBackend.Hubs
 
         public async Task CreateGame(string playerName, int maxPlayers = 10, int questionsPerGame = 10)
         {
-            var gameId = Guid.NewGuid().ToString().Substring(0, 6).ToUpper();
+            var gameId = Guid.NewGuid().ToString()[..6].ToUpper();
             var setting = new GameSettings
             {
                 MaxPlayers = maxPlayers,
@@ -28,7 +26,7 @@ namespace TriviaBackend.Hubs
                 DefaultTimeLimit = 30
             };
 
-            var gameEngine = new GameEngine(_questionService, settings, gameId);
+            var gameEngine = new GameEngine(_questionService, setting, gameId);
             var playerId = await JoinGameInternal(gameId, playerName, gameEngine);
 
             _activeGames[gameId] = gameEngine;
@@ -176,7 +174,7 @@ namespace TriviaBackend.Hubs
             await Clients.Group(gameId).SendAsync("NewQuestion", new
             {
                 questionNumber = gameEngine.CurrentQuestionNumber,
-                questionText = question.Text,
+                questionText = question.QuestionText,
                 options = question.Options,
                 category = question.Category.ToString(),
                 difficulty = question.Difficulty.ToString(),

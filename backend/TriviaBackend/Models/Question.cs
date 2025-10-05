@@ -5,7 +5,8 @@
         Science,
         History,
         Sports,
-        Geography
+        Geography,
+        Literature
     }
     public enum DifficultyLevel
     {

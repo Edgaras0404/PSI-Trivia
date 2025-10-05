@@ -71,7 +71,6 @@ C:\Users\LENOVO\source\repos\Edgaras0404\PSI-Trivia\backend\TriviaBackend\obj\De
 C:\Users\LENOVO\source\repos\Edgaras0404\PSI-Trivia\backend\TriviaBackend\obj\Debug\net8.0\staticwebassets.build.json.cache
 C:\Users\LENOVO\source\repos\Edgaras0404\PSI-Trivia\backend\TriviaBackend\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\LENOVO\source\repos\Edgaras0404\PSI-Trivia\backend\TriviaBackend\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-C:\Users\LENOVO\source\repos\Edgaras0404\PSI-Trivia\backend\TriviaBackend\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\LENOVO\source\repos\Edgaras0404\PSI-Trivia\backend\TriviaBackend\obj\Debug\net8.0\TriviaBa.A4BC4930.Up2Date
 C:\Users\LENOVO\source\repos\Edgaras0404\PSI-Trivia\backend\TriviaBackend\obj\Debug\net8.0\TriviaBackend.genruntimeconfig.cache
 C:\Users\LENOVO\source\repos\Edgaras0404\PSI-Trivia\backend\TriviaBackend\obj\Debug\net8.0\ref\TriviaBackend.dll

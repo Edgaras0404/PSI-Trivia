@@ -17,7 +17,6 @@ namespace TriviaBackend.Services
             LoadDefaultQuestions();
         }
 
-        // Data load from file
         public bool LoadQuestionsFromFile(string filePath)
         {
             try
@@ -41,8 +40,7 @@ namespace TriviaBackend.Services
             return false;
         }
 
-        // Question filtering and retrieval (using LINQ)
-        public List<TriviaQuestion> GetQuestions(QuestionCategory[] categories = null,
+        public List<TriviaQuestion> GetQuestions(QuestionCategory[]? categories = null,
                                                DifficultyLevel? maxDifficulty = null,
                                                int count = 10)
         {
@@ -58,13 +56,11 @@ namespace TriviaBackend.Services
                 query = query.Where(q => q.Difficulty <= maxDifficulty.Value);
             }
 
-            // Randomize and take specified question count
             return query.OrderBy(q => Guid.NewGuid())
                        .Take(count)
                        .ToList();
         }
 
-        // Collections usage
         public Dictionary<QuestionCategory, int> GetQuestionCountByCategory()
         {
             var categoryCounts = new Dictionary<QuestionCategory, int>();

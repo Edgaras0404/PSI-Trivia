@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.SignalR;
-using NuGet.Configuration;
 using TriviaBackend.Models;
 using TriviaBackend.Services;
 
@@ -18,7 +17,10 @@ namespace TriviaBackend.Hubs
 
         public async Task CreateGame(string playerName, int maxPlayers = 10, int questionsPerGame = 10)
         {
+            Console.WriteLine("=== CreateGame called ===");
             var gameId = Guid.NewGuid().ToString()[..6].ToUpper();
+            Console.WriteLine($"Generated gameId: {gameId}");
+
             var setting = new GameSettings
             {
                 MaxPlayers = maxPlayers,
@@ -34,7 +36,7 @@ namespace TriviaBackend.Hubs
             await Clients.Caller.SendAsync("GameCreated", new
             {
                 gameId,
-                playerId, 
+                playerId,
                 playerName,
                 settings = new
                 {
@@ -44,9 +46,10 @@ namespace TriviaBackend.Hubs
                 }
             });
         }
+
         public async Task JoinGame(string gameId, string playerName)
         {
-            if(!_activeGames.ContainsKey(gameId))
+            if (!_activeGames.ContainsKey(gameId))
             {
                 await Clients.Caller.SendAsync("Error", "Game not found");
                 return;
@@ -55,11 +58,12 @@ namespace TriviaBackend.Hubs
             var gameEngine = _activeGames[gameId];
             await JoinGameInternal(gameId, playerName, gameEngine);
         }
+
         private async Task<int> JoinGameInternal(string gameId, string playerName, GameEngine gameEngine)
         {
             var playerId = GeneratePlayerId(gameEngine);
 
-            if(!gameEngine.AddPlayer(playerName, playerId))
+            if (!gameEngine.AddPlayer(playerName, playerId))
             {
                 await Clients.Caller.SendAsync("Error", "Could not join game");
                 return -1;
@@ -87,43 +91,70 @@ namespace TriviaBackend.Hubs
             return playerId;
         }
 
-        public async Task StartGame(string gameId, string[] categories = null, string difficulty = null)
+        public async Task StartGame(string gameId, string[]? categories, string? difficulty)
         {
-            if (!_activeGames.ContainsKey(gameId))
+            try
             {
-                await Clients.Caller.SendAsync("Error", "Game not found");
-                return;
-            }
+                Console.WriteLine($"=== StartGame called with gameId: {gameId} ===");
 
-            var gameEngine = _activeGames[gameId];
+                if (!_activeGames.ContainsKey(gameId))
+                {
+                    Console.WriteLine($"ERROR: Game {gameId} not found in _activeGames");
+                    await Clients.Caller.SendAsync("Error", "Game not found");
+                    return;
+                }
 
-            QuestionCategory[] selectedCategories = null;
-            if (categories != null && categories.Length > 0)
-            {
-                selectedCategories = categories
-                    .Select(c => Enum.TryParse<QuestionCategory>(c, true, out var cat) ? cat : (QuestionCategory?)null)
-                    .Where(c => c.HasValue)
-                    .Select(c => c.Value)
-                    .ToArray();
-            }
+                var gameEngine = _activeGames[gameId];
+                Console.WriteLine($"Game found. Status: {gameEngine.Status}, Players: {gameEngine.GetPlayers().Count}");
 
-            DifficultyLevel? maxDifficulty = null;
-            if (!string.IsNullOrEmpty(difficulty) &&
-                Enum.TryParse<DifficultyLevel>(difficulty, true, out var diff))
-            {
-                maxDifficulty = diff;
-            }
+                var allCategories = _questionService.GetQuestionCountByCategory();
+                Console.WriteLine($"Total questions available: {allCategories.Values.Sum()}");
 
-            if (gameEngine.StartGame(selectedCategories, maxDifficulty))
-            {
-                await Clients.Group(gameId).SendAsync("GameStarted");
-                await SendCurrentQuestion(gameId, gameEngine);
+                QuestionCategory[]? selectedCategories = null;
+                if (categories != null && categories.Length > 0)
+                {
+                    selectedCategories = categories
+                        .Select(c => Enum.TryParse<QuestionCategory>(c, true, out var cat) ? cat : (QuestionCategory?)null)
+                        .Where(c => c.HasValue)
+                        .Select(c => c!.Value)
+                        .ToArray();
+                    Console.WriteLine($"Selected categories: {string.Join(", ", selectedCategories)}");
+                }
+                else
+                {
+                    Console.WriteLine("No categories specified - using all categories");
+                }
+
+                DifficultyLevel? maxDifficulty = null;
+                if (!string.IsNullOrEmpty(difficulty) &&
+                    Enum.TryParse<DifficultyLevel>(difficulty, true, out var diff))
+                {
+                    maxDifficulty = diff;
+                    Console.WriteLine($"Max difficulty: {maxDifficulty}");
+                }
+
+                Console.WriteLine("Calling gameEngine.StartGame...");
+                if (gameEngine.StartGame(selectedCategories, maxDifficulty))
+                {
+                    Console.WriteLine("Game started successfully!");
+                    await Clients.Group(gameId).SendAsync("GameStarted");
+                    await SendCurrentQuestion(gameId, gameEngine);
+                }
+                else
+                {
+                    Console.WriteLine("ERROR: gameEngine.StartGame returned false");
+                    await Clients.Caller.SendAsync("Error", "Failed to start game");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                await Clients.Caller.SendAsync("Error", "Failed to start game");
+                Console.WriteLine($"EXCEPTION in StartGame: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                await Clients.Caller.SendAsync("Error", $"Error: {ex.Message}");
+                throw;
             }
         }
+
         public async Task SubmitAnswer(string gameId, int playerId, int answerIndex)
         {
             if (!_activeGames.ContainsKey(gameId))
@@ -186,6 +217,8 @@ namespace TriviaBackend.Hubs
         private async Task RevealAnswer(string gameId, GameEngine gameEngine)
         {
             var question = gameEngine.CurrentQuestion;
+            if (question == null) return;
+
             var leaderboard = gameEngine.GetCurrentGameLeaderboard();
 
             await Clients.Group(gameId).SendAsync("AnswerRevealed", new
@@ -227,7 +260,7 @@ namespace TriviaBackend.Hubs
                 categories.Select(c => new { category = c.Key.ToString(), count = c.Value }));
         }
 
-        public override async Task OnDisconnectedAsync(Exception exception)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
             if (_playerGameMap.TryGetValue(Context.ConnectionId, out var gameId))
             {
@@ -249,4 +282,3 @@ namespace TriviaBackend.Hubs
         }
     }
 }
-

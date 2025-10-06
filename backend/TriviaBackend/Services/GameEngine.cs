@@ -11,22 +11,21 @@ namespace TriviaBackend.Services
         private List<GamePlayer> _players;
         private Queue<TriviaQuestion> _gameQuestions;
         private Dictionary<int, List<GameAnswer>> _gameAnswers;
-        private TriviaQuestion _currentQuestion;
+        private TriviaQuestion? _currentQuestion;
         private DateTime _questionStartTime;
         private GameSettings _settings;
 
         public GameStatus Status { get; private set; }
         public int CurrentQuestionNumber { get; private set; }
         public string GameId { get; private set; }
-        public TriviaQuestion CurrentQuestion => _currentQuestion;
+        public TriviaQuestion? CurrentQuestion => _currentQuestion;
 
         public TimeSpan TimeRemaining => _currentQuestion != null ?
             TimeSpan.FromSeconds(_currentQuestion.TimeLimit) - (DateTime.Now - _questionStartTime) : TimeSpan.Zero;
 
-        // Named and optional arguments in constructor
         public GameEngine(QuestionService questionService,
                          GameSettings settings = default,
-                         string gameId = null)
+                         string? gameId = null)
         {
             _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
             _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;
@@ -39,7 +38,6 @@ namespace TriviaBackend.Services
             CurrentQuestionNumber = 0;
         }
 
-        // Method with optional parameters
         public bool AddPlayer(string playerName, int? playerId = null, DateTime? joinTime = null)
         {
             if (_players.Count >= _settings.MaxPlayers)
@@ -54,7 +52,8 @@ namespace TriviaBackend.Services
                 Name = playerName,
                 JoinedGameAt = joinTime ?? DateTime.Now,
                 CurrentGameScore = 0,
-                CorrectAnswersInGame = 0
+                CorrectAnswersInGame = 0,
+                IsActive = true
             };
 
             _players.Add(player);
@@ -62,27 +61,38 @@ namespace TriviaBackend.Services
             return true;
         }
 
-        public bool StartGame(QuestionCategory[] categories = null, DifficultyLevel? maxDifficulty = null)
+        public bool StartGame(QuestionCategory[]? categories = null, DifficultyLevel? maxDifficulty = null)
         {
             if (_players.Count == 0 || Status != GameStatus.Waiting)
                 return false;
 
-            var questions = _questionService.GetQuestions(categories, maxDifficulty, _settings.QuestionsPerGame);
-
-            if (questions.Count == 0)
-                return false;
-
-            // Iterating through collection to populate game questions
-            _gameQuestions.Clear();
-            foreach (var question in questions)
+            try
             {
-                _gameQuestions.Enqueue(question);
-            }
+                var questions = _questionService.GetQuestions(categories, maxDifficulty, _settings.QuestionsPerGame);
 
-            Status = GameStatus.InProgress;
-            CurrentQuestionNumber = 0;
-            NextQuestion();
-            return true;
+                if (questions == null || questions.Count == 0)
+                {
+                    Console.WriteLine("No questions returned from QuestionService");
+                    return false;
+                }
+
+                _gameQuestions.Clear();
+                foreach (var question in questions)
+                {
+                    _gameQuestions.Enqueue(question);
+                }
+
+                Status = GameStatus.InProgress;
+                CurrentQuestionNumber = 0;
+                NextQuestion();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GameEngine.StartGame: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public bool NextQuestion()
@@ -128,7 +138,6 @@ namespace TriviaBackend.Services
             return isCorrect ? AnswerResult.Correct : AnswerResult.Incorrect;
         }
 
-        // Getting current game leaderboard (LINQ usage)
         public List<GamePlayer> GetCurrentGameLeaderboard()
         {
             return _players

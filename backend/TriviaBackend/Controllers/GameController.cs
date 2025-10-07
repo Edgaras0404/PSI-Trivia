@@ -9,7 +9,7 @@ namespace TriviaBackend.Controllers
 {
     public class GameController : Controller
     {
-        private readonly GameEngine _gameEngine;
+        private readonly GameEngineService _gameEngine;
         private readonly QuestionService _questionService;
         private readonly GameSettings _settings;
 
@@ -17,7 +17,7 @@ namespace TriviaBackend.Controllers
         {
             _settings = new GameSettings(MaxPlayers: 5, QuestionsPerGame: 10, DefaultTimeLimit: 20);
             _questionService = new QuestionService();
-            _gameEngine = new GameEngine(_questionService, _settings);
+            _gameEngine = new GameEngineService(_questionService, settings);
         }
 
         public void StartInteractiveGame()

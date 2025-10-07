@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using System;
+using TriviaBackend.Data;
 using TriviaBackend.Hubs;
 using TriviaBackend.Services;
 
@@ -25,6 +28,11 @@ namespace TriviaBackend
                           .AllowCredentials();
                 });
             });
+            // Get the connection string from appsettings.json
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+            builder.Services.AddDbContext<TriviaDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

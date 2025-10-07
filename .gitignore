@@ -429,3 +429,4 @@ FodyWeavers.xsd
 
 backend/TriviaBackend/bin/
 backend/TriviaBackend/obj/
+/backend/TriviaBackend/appsettings.json

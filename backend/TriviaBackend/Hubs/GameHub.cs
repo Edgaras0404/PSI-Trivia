@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.SignalR;
 using TriviaBackend.Models;
 using TriviaBackend.Services;
+using TriviaBackend.Models.Enums;
+using TriviaBackend.Models.Objects;
 
 namespace TriviaBackend.Hubs
 {

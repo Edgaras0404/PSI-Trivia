@@ -17,7 +17,7 @@ namespace TriviaBackend.Controllers
         {
             _settings = new GameSettings(MaxPlayers: 5, QuestionsPerGame: 10, DefaultTimeLimit: 20);
             _questionService = new QuestionService();
-            _gameEngine = new GameEngineService(_questionService, settings);
+            _gameEngine = new GameEngineService(_questionService, _settings);
         }
 
         public void StartInteractiveGame()

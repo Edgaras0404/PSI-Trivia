@@ -8,7 +8,7 @@ namespace TriviaBackend.Hubs
 {
     public class GameHub : Hub
     {
-        private static readonly Dictionary<string, GameEngine> _activeGames = new();
+        private static readonly Dictionary<string, GameEngineService> _activeGames = new();
         private static readonly Dictionary<string, string> _playerGameMap = new();
         private readonly QuestionService _questionService;
 
@@ -30,7 +30,7 @@ namespace TriviaBackend.Hubs
                 DefaultTimeLimit = 30
             };
 
-            var gameEngine = new GameEngine(_questionService, setting, gameId);
+            var gameEngine = new GameEngineService(_questionService, setting, gameId);
             var playerId = await JoinGameInternal(gameId, playerName, gameEngine);
 
             _activeGames[gameId] = gameEngine;
@@ -61,7 +61,7 @@ namespace TriviaBackend.Hubs
             await JoinGameInternal(gameId, playerName, gameEngine);
         }
 
-        private async Task<int> JoinGameInternal(string gameId, string playerName, GameEngine gameEngine)
+        private async Task<int> JoinGameInternal(string gameId, string playerName, GameEngineService gameEngine)
         {
             var playerId = GeneratePlayerId(gameEngine);
 
@@ -199,7 +199,7 @@ namespace TriviaBackend.Hubs
             await SendCurrentQuestion(gameId, gameEngine);
         }
 
-        private async Task SendCurrentQuestion(string gameId, GameEngine gameEngine)
+        private async Task SendCurrentQuestion(string gameId, GameEngineService gameEngine)
         {
             var question = gameEngine.CurrentQuestion;
             if (question == null) return;
@@ -216,7 +216,7 @@ namespace TriviaBackend.Hubs
             });
         }
 
-        private async Task RevealAnswer(string gameId, GameEngine gameEngine)
+        private async Task RevealAnswer(string gameId, GameEngineService gameEngine)
         {
             var question = gameEngine.CurrentQuestion;
             if (question == null) return;
@@ -237,7 +237,7 @@ namespace TriviaBackend.Hubs
             });
         }
 
-        private async Task EndGame(string gameId, GameEngine gameEngine)
+        private async Task EndGame(string gameId, GameEngineService gameEngine)
         {
             var finalLeaderboard = gameEngine.GetCurrentGameLeaderboard();
 
@@ -277,7 +277,7 @@ namespace TriviaBackend.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        private int GeneratePlayerId(GameEngine gameEngine)
+        private int GeneratePlayerId(GameEngineService gameEngine)
         {
             var players = gameEngine.GetPlayers();
             return players.Count > 0 ? players.Max(p => p.Id) + 1 : 1;

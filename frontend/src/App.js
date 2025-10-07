@@ -167,12 +167,12 @@ export default function TriviaGame() {
         await connection.invoke('JoinGame', gameId.toUpperCase(), playerName);
     };
 
-   const startGame = async () => {
-    try {
-        await connection.invoke('StartGame', gameId, null, null);
-    } catch (error) {
-        console.error('Error starting game:', error);
-    }
+    const startGame = async () => {
+        try {
+            await connection.invoke('StartGame', gameId, null, null);
+        } catch (error) {
+            console.error('Error starting game:', error);
+        }
     };
 
     const submitAnswer = async (index) => {

@@ -15,7 +15,6 @@ namespace TriviaBackend
             // Add services to the container
             builder.Services.AddControllers();
             builder.Services.AddSignalR();
-            builder.Services.AddSingleton<QuestionService>();
 
             // Add CORS
             builder.Services.AddCors(options =>
@@ -33,6 +32,7 @@ namespace TriviaBackend
 
             builder.Services.AddDbContext<TriviaDbContext>(options =>
     options.UseNpgsql(connectionString));
+            builder.Services.AddScoped<QuestionService>();
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

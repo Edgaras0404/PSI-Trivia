@@ -6,17 +6,22 @@ using System.Text.Json;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Records;
 using TriviaBackend.Models.Objects;
+using TriviaBackend.Data;
+using Microsoft.AspNetCore.Mvc;
 
 namespace TriviaBackend.Services
 {
-    public class QuestionService
+    public class QuestionService : ControllerBase
     {
+        private readonly TriviaDbContext _dbContext;
         private List<TriviaQuestion> _questionBank;
 
-        public QuestionService()
+        public QuestionService(TriviaDbContext dbContext)
         {
+            _dbContext = dbContext;
             _questionBank = new List<TriviaQuestion>();
-            LoadDefaultQuestions();
+            //LoadDefaultQuestions();
+            LoadDBQuestions();
         }
 
         public bool LoadQuestionsFromFile(string filePath)
@@ -138,6 +143,12 @@ namespace TriviaBackend.Services
             };
 
             _questionBank.AddRange(defaultQuestions);
+        }
+
+        private void LoadDBQuestions()
+        {
+            var questions = _dbContext.Questions.ToList();
+            _questionBank.AddRange(questions);
         }
     }
 }

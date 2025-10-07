@@ -1,23 +1,37 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using TriviaBackend.Data;
 using TriviaBackend.Models;
-using TriviaBackend.Services;
 using TriviaBackend.Models.Enums;
-using TriviaBackend.Models.Records;
 using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Records;
+using TriviaBackend.Services;
 
 namespace TriviaBackend.Controllers
 {
     public class GameController : Controller
     {
+        private readonly TriviaDbContext _dbContext;
         private readonly GameEngineService _gameEngine;
         private readonly QuestionService _questionService;
         private readonly GameSettings _settings;
 
-        public GameController()
+        public GameController(TriviaDbContext dbContext, QuestionService questionService)
         {
+            _dbContext = dbContext;
             _settings = new GameSettings(MaxPlayers: 5, QuestionsPerGame: 10, DefaultTimeLimit: 20);
-            _questionService = new QuestionService();
+            _questionService = questionService;
             _gameEngine = new GameEngineService(_questionService, _settings);
+        }
+
+        [HttpGet("/getQuestionByID")]
+        public IActionResult GetQuestionByID(int id)
+        {
+            var question = _dbContext.Questions.FirstOrDefault(q => q.Id == id);
+            if (question == null)
+            {
+                return NotFound(new { message = "Question not found" });
+            }
+            return Ok(question);
         }
 
         public void StartInteractiveGame()

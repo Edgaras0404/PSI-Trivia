@@ -1,3 +1,5 @@
+using TriviaBackend.Hubs;
+using TriviaBackend.Services;
 
 namespace TriviaBackend
 {
@@ -7,28 +9,39 @@ namespace TriviaBackend
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
+            // Add services to the container
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            builder.Services.AddSignalR();
+            builder.Services.AddSingleton<QuestionService>();
+
+            // Add CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                });
+            });
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // Configure the HTTP request pipeline
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
-
+            app.UseCors("AllowAll");
             app.UseAuthorization();
-
-
             app.MapControllers();
+            app.MapHub<GameHub>("/gamehub");
 
             app.Run();
         }

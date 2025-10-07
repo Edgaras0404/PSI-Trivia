@@ -1,4 +1,4 @@
-﻿namespace TriviaBackend.Models.Objects
+namespace TriviaBackend.Models.Objects
 {
     public class GamePlayer
     {

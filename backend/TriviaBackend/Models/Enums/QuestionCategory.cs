@@ -1,4 +1,4 @@
-﻿namespace TriviaBackend.Models.Enums
+namespace TriviaBackend.Models.Enums
 {
     public enum QuestionCategory
     {

@@ -1,4 +1,4 @@
-﻿using TriviaBackend.Models.Enums;
+using TriviaBackend.Models.Enums;
 
 namespace TriviaBackend.Models.Objects
 {

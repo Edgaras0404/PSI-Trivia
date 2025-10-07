@@ -1,259 +1,254 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Models;
 using TriviaBackend.Services;
-using TriviaBackend.Models.Objects;
 using TriviaBackend.Models.Enums;
+using TriviaBackend.Models.Records;
+using TriviaBackend.Models.Objects;
 
 namespace TriviaBackend.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class GameController : ControllerBase
+    public class GameController : Controller
     {
-        private readonly GameEngineService _gameEngine;
+        private readonly GameEngine _gameEngine;
         private readonly QuestionService _questionService;
+        private readonly GameSettings _settings;
 
         public GameController()
         {
+            _settings = new GameSettings(MaxPlayers: 5, QuestionsPerGame: 10, DefaultTimeLimit: 20);
             _questionService = new QuestionService();
-            var settings = new GameSettings(MaxPlayers: 5, QuestionsPerGame: 10, DefaultTimeLimit: 20);
-            _gameEngine = new GameEngineService(_questionService, settings);
+            _gameEngine = new GameEngine(_questionService, _settings);
         }
 
-        // POST: api/game/start
-        [HttpPost("start")]
-        public IActionResult StartGame([FromBody] StartGameRequest request)
+        public void StartInteractiveGame()
         {
-            try
+            Console.WriteLine("== Welcome to the Trivia Game! ==");
+
+            RegisterPlayers();
+
+            if (_gameEngine.GetPlayers().Count == 0)
             {
-                QuestionCategory[]? selectedCategories = null;
-                if (request.Categories != null && request.Categories.Length > 0)
-                {
-                    selectedCategories = request.Categories;
-                }
-
-                DifficultyLevel? maxDifficulty = request.MaxDifficulty;
-
-                if (_gameEngine.StartGame(selectedCategories, maxDifficulty))
-                {
-                    return Ok(new { message = "Game started successfully!", status = _gameEngine.Status });
-                }
-
-                return BadRequest(new { message = "Failed to start game!" });
+                Console.WriteLine("No players registered. Exiting game......");
+                return;
             }
-            catch (Exception ex)
+
+            SetupGame();
+            PlayGame();
+            ShowResults();
+        }
+        private void RegisterPlayers()
+        {
+            Console.WriteLine("\n--- Player Registration ---");
+            Console.WriteLine("Enter player names (press Enter with empty name to finish):");
+
+            while (true)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                Console.Write($"Enter player name (max {_settings.MaxPlayers} players): ");
+                string name = Console.ReadLine().Trim();
+
+                if (string.IsNullOrEmpty(name))
+                    break;
+
+                if (_gameEngine.AddPlayer(name))
+                {
+                    Console.WriteLine($"Player '(name)' added successfully. ");
+                }
+                else
+                {
+                    Console.WriteLine("Could not add player (game full or already started)");
+                    break;
+                }
+            }
+            var players = _gameEngine.GetPlayers();
+            Console.WriteLine($"\nRegistered players: {string.Join(", ", players.Select(p => p.Name))}");
+        }
+        private void SetupGame()
+        {
+            Console.WriteLine("\n--- Game Setup ---");
+            var categoryStats = _questionService.GetQuestionCountByCategory();
+            Console.WriteLine("Available Categories:");
+
+            foreach (var category in categoryStats)
+            {
+                Console.WriteLine($"- {category.Key} ({category.Value} questions)");
+            }
+
+            var players = _gameEngine.GetPlayers();
+            Console.WriteLine($"\nRegistered players: {string.Join(", ", players.Select(p => p.Name))}");
+
+            // FIX: Prompt for category input and assign to categoryInput
+            Console.Write("Select categories (comma-separated, or press Enter for all): ");
+            string categoryInput = Console.ReadLine()?.Trim();
+
+            QuestionCategory[] selectedCategories = null;
+            if (!string.IsNullOrEmpty(categoryInput))
+            {
+                selectedCategories = ParseCategories(categoryInput);
+            }
+
+            Console.Write("Select max difficulty (Easy/Medium/Hard) or press Enter for all: ");
+            string difficultyInput = Console.ReadLine()?.Trim();
+
+            DifficultyLevel? maxDifficulty = null;
+            if (!string.IsNullOrEmpty(difficultyInput) &&
+                Enum.TryParse<DifficultyLevel>(difficultyInput, true, out var difficulty))
+            {
+                maxDifficulty = difficulty;
+            }
+
+            if (_gameEngine.StartGame(selectedCategories, maxDifficulty))
+            {
+                Console.WriteLine("Game started successfully!");
+            }
+            else
+            {
+                Console.WriteLine("Failed to start game!");
             }
         }
-
-        // POST: api/game/players
-        [HttpPost("players")]
-        public IActionResult AddPlayer([FromBody] AddPlayerRequest request)
+        private void PlayGame()
         {
-            try
+            Console.WriteLine("\n--- Game Started ---");
+
+            while (_gameEngine.Status == GameStatus.InProgress)
             {
-                if (string.IsNullOrEmpty(request.Name))
+                DisplayCurrentQuestion();
+                CollectAnswers();
+
+                if (!_gameEngine.NextQuestion())
                 {
-                    return BadRequest(new { message = "Player name is required" });
+                    break;
                 }
 
-                if (_gameEngine.AddPlayer(request.Name))
+                ShowCurrentScores();
+                Console.WriteLine("\nPress Enter to continue to next question...");
+                Console.ReadLine();
+            }
+        }
+        private void DisplayCurrentQuestion()
+        {
+            var question = _gameEngine.CurrentQuestion;
+            if (question == null) return;
+
+            Console.Clear();
+            Console.WriteLine($"\n=== Question {_gameEngine.CurrentQuestionNumber} ===");
+            Console.WriteLine($"Category: {question.Category} | Difficulty: {question.Difficulty}");
+            Console.WriteLine($"Points: {question.Points} | Time Limit: {question.TimeLimit}s");
+            Console.WriteLine($"\n{question.QuestionText}");
+
+            for (int i = 0; i < question.Options.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {question.Options[i]}");
+            }
+            Console.WriteLine();
+        }
+
+        private void CollectAnswers()
+        {
+            var players = _gameEngine.GetPlayers().Where(p => p.IsActive).ToList();
+            var startTime = DateTime.Now;
+            var timeLimit = _gameEngine.CurrentQuestion.TimeLimit;
+
+            foreach (var player in players)
+            {
+                var timeElapsed = (DateTime.Now - startTime).TotalSeconds;
+                var remainingTime = Math.Max(0, timeLimit - (int)timeElapsed);
+
+                if (remainingTime <= 0)
                 {
-                    var players = _gameEngine.GetPlayers();
-                    return Ok(new
+                    Console.WriteLine($"Time up for {player.Name}!");
+                    continue;
+                }
+
+                Console.Write($"{player.Name}, enter your answer (1-{_gameEngine.CurrentQuestion.Options.Count}) " +
+                             $"[{remainingTime}s remaining]: ");
+
+                string input = Console.ReadLine()?.Trim();
+
+                if (int.TryParse(input, out int answer) && answer >= 1 && answer <= _gameEngine.CurrentQuestion.Options.Count)
+                {
+                    var result = _gameEngine.SubmitAnswer(player.Id, answer - 1);
+
+                    switch (result)
                     {
-                        message = $"Player '{request.Name}' added successfully",
-                        players = players.Select(p => new { p.Id, p.Name, p.IsActive })
-                    });
-                }
-
-                return BadRequest(new { message = "Could not add player (game full or already started)" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
-
-        // GET: api/game/players
-        [HttpGet("players")]
-        public IActionResult GetPlayers()
-        {
-            try
-            {
-                var players = _gameEngine.GetPlayers();
-                return Ok(players.Select(p => new { p.Id, p.Name, p.IsActive, p.CurrentScore }));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
-
-        // GET: api/game/status
-        [HttpGet("status")]
-        public IActionResult GetGameStatus()
-        {
-            try
-            {
-                return Ok(new
-                {
-                    status = _gameEngine.Status,
-                    currentQuestionNumber = _gameEngine.CurrentQuestionNumber,
-                    totalQuestions = _gameEngine.Settings.QuestionsPerGame,
-                    maxPlayers = _gameEngine.Settings.MaxPlayers
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
-
-        // GET: api/game/current-question
-        [HttpGet("current-question")]
-        public IActionResult GetCurrentQuestion()
-        {
-            try
-            {
-                var question = _gameEngine.CurrentQuestion;
-                if (question == null)
-                {
-                    return NotFound(new { message = "No current question available" });
-                }
-
-                return Ok(new
-                {
-                    questionNumber = _gameEngine.CurrentQuestionNumber,
-                    category = question.Category,
-                    difficulty = question.Difficulty,
-                    points = question.Points,
-                    timeLimit = question.TimeLimit,
-                    text = question.QuestionText,
-                    options = question.Options.Select((option, index) => new { index = index + 1, text = option })
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
-
-        // POST: api/game/answer
-        [HttpPost("answer")]
-        public IActionResult SubmitAnswer([FromBody] SubmitAnswerRequest request)
-        {
-            try
-            {
-                if (request.PlayerId <= 0 || request.AnswerIndex < 0)
-                {
-                    return BadRequest(new { message = "Invalid player ID or answer index" });
-                }
-
-                var result = _gameEngine.SubmitAnswer(request.PlayerId, request.AnswerIndex);
-                var question = _gameEngine.CurrentQuestion;
-
-                return Ok(new
-                {
-                    result = result.ToString(),
-                    isCorrect = result == AnswerResult.Correct,
-                    correctAnswer = question?.CorrectAnswerIndex + 1,
-                    correctAnswerText = question?.Options[question.CorrectAnswerIndex]
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
-
-        // POST: api/game/next-question
-        [HttpPost("next-question")]
-        public IActionResult NextQuestion()
-        {
-            try
-            {
-                bool hasNextQuestion = _gameEngine.NextQuestion();
-
-                return Ok(new
-                {
-                    hasNextQuestion = hasNextQuestion,
-                    gameStatus = _gameEngine.Status,
-                    currentQuestionNumber = _gameEngine.CurrentQuestionNumber
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
-
-        // GET: api/game/leaderboard
-        [HttpGet("leaderboard")]
-        public IActionResult GetLeaderboard()
-        {
-            try
-            {
-                var leaderboard = _gameEngine.GetCurrentGameLeaderboard();
-
-                return Ok(leaderboard.Select((player, index) => new
-                {
-                    rank = index + 1,
-                    playerId = player.Id,
-                    playerName = player.Name,
-                    score = player.CurrentScore,
-                    correctAnswers = player.CorrectAnswers,
-                    medal = index switch
-                    {
-                        0 => "🥇",
-                        1 => "🥈",
-                        2 => "🥉",
-                        _ => ""
+                        case AnswerResult.Correct:
+                            Console.WriteLine("✓ Correct!");
+                            break;
+                        case AnswerResult.Incorrect:
+                            Console.WriteLine("✗ Incorrect!");
+                            break;
+                        case AnswerResult.TimeUp:
+                            Console.WriteLine("⏰ Time's up!");
+                            break;
                     }
-                }));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
-            }
-        }
-
-        // GET: api/game/categories
-        [HttpGet("categories")]
-        public IActionResult GetAvailableCategories()
-        {
-            try
-            {
-                var categoryStats = _questionService.GetQuestionCountByCategory();
-                return Ok(categoryStats.Select(kvp => new
+                }
+                else
                 {
-                    category = kvp.Key,
-                    questionCount = kvp.Value
-                }));
+                    Console.WriteLine("Invalid answer!");
+                }
             }
-            catch (Exception ex)
+
+            var correctOption = _gameEngine.CurrentQuestion.Options[_gameEngine.CurrentQuestion.CorrectAnswerIndex];
+            Console.WriteLine($"\nCorrect answer: {_gameEngine.CurrentQuestion.CorrectAnswerIndex + 1}. {correctOption}");
+        }
+
+        private void ShowCurrentScores()
+        {
+            Console.WriteLine("\n--- Current Scores ---");
+            var leaderboard = _gameEngine.GetCurrentGameLeaderboard();
+
+            for (int i = 0; i < leaderboard.Count; i++)
             {
-                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+                var player = leaderboard[i];
+                Console.WriteLine($"{i + 1}. {player.Name}: {player.CurrentGameScore} points " +
+                                $"({player.CorrectAnswersInGame} correct)");
             }
         }
-    }
 
-    // Request/Response models
-    public class StartGameRequest
-    {
-        public QuestionCategory[]? Categories { get; set; }
-        public DifficultyLevel? MaxDifficulty { get; set; }
-    }
+        private void ShowResults()
+        {
+            Console.WriteLine("\n=== GAME FINISHED ===");
+            Console.WriteLine("Final Results:");
 
-    public class AddPlayerRequest
-    {
-        public string Name { get; set; } = string.Empty;
-    }
+            var finalLeaderboard = _gameEngine.GetCurrentGameLeaderboard();
 
-    public class SubmitAnswerRequest
-    {
-        public int PlayerId { get; set; }
-        public int AnswerIndex { get; set; }
+            for (int i = 0; i < finalLeaderboard.Count; i++)
+            {
+                var player = finalLeaderboard[i];
+                string medal = i switch
+                {
+                    0 => "🥇",
+                    1 => "🥈",
+                    2 => "🥉",
+                    _ => "  "
+                };
+
+                Console.WriteLine($"{medal} {i + 1}. {player.Name}");
+                Console.WriteLine($"     Score: {player.CurrentGameScore} points");
+                Console.WriteLine($"     Correct Answers: {player.CorrectAnswersInGame}");
+                Console.WriteLine();
+            }
+
+            if (finalLeaderboard.Count > 0)
+            {
+                Console.WriteLine($"🎉 Congratulations {finalLeaderboard[0].Name}! You won!");
+            }
+        }
+
+        private QuestionCategory[] ParseCategories(string input)
+        {
+            var categories = new List<QuestionCategory>();
+            var parts = input.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var part in parts)
+            {
+                if (Enum.TryParse<QuestionCategory>(part.Trim(), true, out var category))
+                {
+                    categories.Add(category);
+                }
+            }
+
+            return categories.ToArray();
+        }
     }
 }
+

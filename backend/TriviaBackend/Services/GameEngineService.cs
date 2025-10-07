@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TriviaBackend.Models.Enums;
-using TriviaBackend.Models.Objects;
 using TriviaBackend.Models.Records;
+using TriviaBackend.Models.Objects;
 
 namespace TriviaBackend.Services
 {
-    public class GameEngineService
+    public class GameEngine
     {
         private readonly QuestionService _questionService;
         private List<GamePlayer> _players;
@@ -21,12 +21,13 @@ namespace TriviaBackend.Services
         public int CurrentQuestionNumber { get; private set; }
         public string GameId { get; private set; }
         public TriviaQuestion? CurrentQuestion => _currentQuestion;
-        public GameSettings Settings => _settings;
 
         public TimeSpan TimeRemaining => _currentQuestion != null ?
             TimeSpan.FromSeconds(_currentQuestion.TimeLimit) - (DateTime.Now - _questionStartTime) : TimeSpan.Zero;
 
-        public GameEngineService(QuestionService questionService, GameSettings settings = default, string? gameId = null)
+        public GameEngine(QuestionService questionService,
+                         GameSettings settings = default,
+                         string? gameId = null)
         {
             _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
             _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;
@@ -52,8 +53,6 @@ namespace TriviaBackend.Services
                 Id = playerId ?? GeneratePlayerId(),
                 Name = playerName,
                 JoinedGameAt = joinTime ?? DateTime.Now,
-                CurrentScore = 0,
-                CorrectAnswers = 0,
                 CurrentGameScore = 0,
                 CorrectAnswersInGame = 0,
                 IsActive = true
@@ -69,21 +68,33 @@ namespace TriviaBackend.Services
             if (_players.Count == 0 || Status != GameStatus.Waiting)
                 return false;
 
-            var questions = _questionService.GetQuestions(categories, maxDifficulty, _settings.QuestionsPerGame);
-
-            if (questions.Count == 0)
-                return false;
-
-            _gameQuestions.Clear();
-            foreach (var question in questions)
+            try
             {
-                _gameQuestions.Enqueue(question);
-            }
+                var questions = _questionService.GetQuestions(categories, maxDifficulty, _settings.QuestionsPerGame);
 
-            Status = GameStatus.InProgress;
-            CurrentQuestionNumber = 0;
-            NextQuestion();
-            return true;
+                if (questions == null || questions.Count == 0)
+                {
+                    Console.WriteLine("No questions returned from QuestionService");
+                    return false;
+                }
+
+                _gameQuestions.Clear();
+                foreach (var question in questions)
+                {
+                    _gameQuestions.Enqueue(question);
+                }
+
+                Status = GameStatus.InProgress;
+                CurrentQuestionNumber = 0;
+                NextQuestion();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GameEngine.StartGame: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public bool NextQuestion()
@@ -120,15 +131,8 @@ namespace TriviaBackend.Services
             var timeBonus = isCorrect ? Math.Max(0, _currentQuestion.TimeLimit - (int)(submissionTime - _questionStartTime).TotalSeconds) : 0;
             var pointsEarned = isCorrect ? _currentQuestion.Points + timeBonus : 0;
 
-            // Update both score tracking properties
-            player.CurrentScore += pointsEarned;
             player.CurrentGameScore += pointsEarned;
-
-            if (isCorrect)
-            {
-                player.CorrectAnswers++;
-                player.CorrectAnswersInGame++;
-            }
+            if (isCorrect) player.CorrectAnswersInGame++;
 
             var answer = new GameAnswer(playerId, _currentQuestion.Id, selectedAnswer, submissionTime);
             _gameAnswers[playerId].Add(answer);
@@ -140,8 +144,8 @@ namespace TriviaBackend.Services
         {
             return _players
                 .Where(p => p.IsActive)
-                .OrderByDescending(p => p.CurrentScore)
-                .ThenByDescending(p => p.CorrectAnswers)
+                .OrderByDescending(p => p.CurrentGameScore)
+                .ThenByDescending(p => p.CorrectAnswersInGame)
                 .ToList();
         }
 

@@ -10,11 +10,19 @@ namespace TriviaBackend.Hubs
     {
         private static readonly Dictionary<string, GameEngineService> _activeGames = new();
         private static readonly Dictionary<string, string> _playerGameMap = new();
+        private static readonly Dictionary<string, CancellationTokenSource> _gameTimers = new();
+        private static readonly Dictionary<string, bool> _questionRevealed = new();
+        private static IHubContext<GameHub>? _staticHubContext;
         private readonly QuestionService _questionService;
 
         public GameHub(QuestionService questionService)
         {
             _questionService = questionService;
+        }
+
+        public static void SetHubContext(IHubContext<GameHub> hubContext)
+        {
+            _staticHubContext = hubContext;
         }
 
         public async Task CreateGame(string playerName, int maxPlayers = 10, int questionsPerGame = 10)
@@ -159,6 +167,8 @@ namespace TriviaBackend.Hubs
 
         public async Task SubmitAnswer(string gameId, int playerId, int answerIndex)
         {
+            Console.WriteLine($"=== SubmitAnswer called: gameId={gameId}, playerId={playerId}, answer={answerIndex} ===");
+
             if (!_activeGames.ContainsKey(gameId))
             {
                 await Clients.Caller.SendAsync("Error", "Game not found");
@@ -166,7 +176,17 @@ namespace TriviaBackend.Hubs
             }
 
             var gameEngine = _activeGames[gameId];
+
+            var questionKey = $"{gameId}_{gameEngine.CurrentQuestion?.Id}";
+            if (_questionRevealed.ContainsKey(questionKey) && _questionRevealed[questionKey])
+            {
+                Console.WriteLine($"Question already revealed for {questionKey}");
+                await Clients.Caller.SendAsync("Error", "Question already completed");
+                return;
+            }
+
             var result = gameEngine.SubmitAnswer(playerId, answerIndex);
+            Console.WriteLine($"Answer result: {result}");
 
             await Clients.Caller.SendAsync("AnswerResult", new
             {
@@ -176,7 +196,18 @@ namespace TriviaBackend.Hubs
 
             if (gameEngine.AllPlayersAnswered())
             {
-                await RevealAnswer(gameId, gameEngine);
+                Console.WriteLine($"All players answered for game {gameId}");
+
+                if (_gameTimers.ContainsKey(gameId))
+                {
+                    _gameTimers[gameId].Cancel();
+                }
+
+                await RevealAnswerAndProgress(gameId, gameEngine);
+            }
+            else
+            {
+                Console.WriteLine($"Waiting for more players to answer in game {gameId}");
             }
         }
 
@@ -202,7 +233,22 @@ namespace TriviaBackend.Hubs
         private async Task SendCurrentQuestion(string gameId, GameEngineService gameEngine)
         {
             var question = gameEngine.CurrentQuestion;
-            if (question == null) return;
+            if (question == null)
+            {
+                Console.WriteLine($"ERROR: No current question for game {gameId}");
+                return;
+            }
+
+            var questionKey = $"{gameId}_{question.Id}";
+            _questionRevealed[questionKey] = false;
+
+            if (_gameTimers.ContainsKey(gameId))
+            {
+                _gameTimers[gameId].Cancel();
+                _gameTimers[gameId].Dispose();
+            }
+
+            Console.WriteLine($"Sending question {gameEngine.CurrentQuestionNumber} (ID: {question.Id}) to game {gameId}, TimeLimit: {question.TimeLimit}s");
 
             await Clients.Group(gameId).SendAsync("NewQuestion", new
             {
@@ -214,16 +260,79 @@ namespace TriviaBackend.Hubs
                 timeLimit = question.TimeLimit,
                 points = question.Points
             });
+
+            var cts = new CancellationTokenSource();
+            _gameTimers[gameId] = cts;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    Console.WriteLine($"[TIMER] Started for {question.TimeLimit} seconds for game {gameId}");
+                    await Task.Delay(TimeSpan.FromSeconds(question.TimeLimit), cts.Token);
+
+                    // Time's up
+                    if (!cts.Token.IsCancellationRequested && _staticHubContext != null)
+                    {
+                        Console.WriteLine($"[TIMER] Time's up for game {gameId}!");
+
+                        // Use static hub context to send messages from background thread
+                        await _staticHubContext.Clients.Group(gameId).SendAsync("TimeUp");
+                        Console.WriteLine($"[TIMER] Sent TimeUp message to group {gameId}");
+
+                        await RevealAnswerAndProgress(gameId, gameEngine);
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    Console.WriteLine($"[TIMER] Cancelled for game {gameId} - all players answered early");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[TIMER] ERROR in timer for game {gameId}: {ex.Message}");
+                    Console.WriteLine($"[TIMER] Stack trace: {ex.StackTrace}");
+                }
+                finally
+                {
+                    if (_gameTimers.ContainsKey(gameId) && _gameTimers[gameId] == cts)
+                    {
+                        _gameTimers.Remove(gameId);
+                    }
+                    cts.Dispose();
+                }
+            });
         }
 
-        private async Task RevealAnswer(string gameId, GameEngineService gameEngine)
+        private async Task RevealAnswerAndProgress(string gameId, GameEngineService gameEngine)
         {
+            Console.WriteLine($"=== RevealAnswerAndProgress called for game {gameId} ===");
+
+            if (_staticHubContext == null)
+            {
+                Console.WriteLine("ERROR: Hub context is null!");
+                return;
+            }
+
             var question = gameEngine.CurrentQuestion;
-            if (question == null) return;
+            if (question == null)
+            {
+                Console.WriteLine($"ERROR: No current question in RevealAnswerAndProgress for game {gameId}");
+                return;
+            }
+
+            var questionKey = $"{gameId}_{question.Id}";
+            if (_questionRevealed.ContainsKey(questionKey) && _questionRevealed[questionKey])
+            {
+                Console.WriteLine($"Question {question.Id} already revealed for game {gameId}, skipping");
+                return;
+            }
+
+            _questionRevealed[questionKey] = true;
+            Console.WriteLine($"Revealing answer for question {question.Id} in game {gameId}");
 
             var leaderboard = gameEngine.GetCurrentGameLeaderboard();
 
-            await Clients.Group(gameId).SendAsync("AnswerRevealed", new
+            await _staticHubContext.Clients.Group(gameId).SendAsync("AnswerRevealed", new
             {
                 correctAnswer = question.CorrectAnswerIndex,
                 correctText = question.Options[question.CorrectAnswerIndex],
@@ -235,13 +344,52 @@ namespace TriviaBackend.Hubs
                     correctAnswers = p.CorrectAnswersInGame
                 })
             });
+
+            Console.WriteLine($"Sent AnswerRevealed to game {gameId}");
+
+            Console.WriteLine($"Waiting 3 seconds before next question...");
+            await Task.Delay(3000);
+
+            Console.WriteLine($"Moving to next question for game {gameId}");
+
+            if (!gameEngine.NextQuestion())
+            {
+                Console.WriteLine($"No more questions, ending game {gameId}");
+                await EndGame(gameId, gameEngine);
+            }
+            else
+            {
+                Console.WriteLine($"Loading next question for game {gameId}");
+                await SendCurrentQuestion(gameId, gameEngine);
+            }
         }
 
         private async Task EndGame(string gameId, GameEngineService gameEngine)
         {
+            Console.WriteLine($"=== Ending game {gameId} ===");
+
+            if (_staticHubContext == null)
+            {
+                Console.WriteLine("ERROR: Hub context is null in EndGame!");
+                return;
+            }
+
+            if (_gameTimers.ContainsKey(gameId))
+            {
+                _gameTimers[gameId].Cancel();
+                _gameTimers[gameId].Dispose();
+                _gameTimers.Remove(gameId);
+            }
+
+            var keysToRemove = _questionRevealed.Keys.Where(k => k.StartsWith($"{gameId}_")).ToList();
+            foreach (var key in keysToRemove)
+            {
+                _questionRevealed.Remove(key);
+            }
+
             var finalLeaderboard = gameEngine.GetCurrentGameLeaderboard();
 
-            await Clients.Group(gameId).SendAsync("GameEnded", new
+            await _staticHubContext.Clients.Group(gameId).SendAsync("GameEnded", new
             {
                 leaderboard = finalLeaderboard.Select(p => new
                 {
@@ -253,6 +401,7 @@ namespace TriviaBackend.Hubs
             });
 
             _activeGames.Remove(gameId);
+            Console.WriteLine($"Game {gameId} ended and removed from active games");
         }
 
         public async Task GetAvailableCategories()

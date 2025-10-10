@@ -254,7 +254,7 @@ namespace TriviaBackend.Hubs
             {
                 questionNumber = gameEngine.CurrentQuestionNumber,
                 questionText = question.QuestionText,
-                options = question.Options,
+                options = question.AnswerOptions,
                 category = question.Category.ToString(),
                 difficulty = question.Difficulty.ToString(),
                 timeLimit = question.TimeLimit,
@@ -335,7 +335,7 @@ namespace TriviaBackend.Hubs
             await _staticHubContext.Clients.Group(gameId).SendAsync("AnswerRevealed", new
             {
                 correctAnswer = question.CorrectAnswerIndex,
-                correctText = question.Options[question.CorrectAnswerIndex],
+                correctText = question.AnswerOptions[question.CorrectAnswerIndex],
                 leaderboard = leaderboard.Select(p => new
                 {
                     p.Id,

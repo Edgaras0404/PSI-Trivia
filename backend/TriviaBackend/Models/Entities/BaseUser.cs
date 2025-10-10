@@ -5,7 +5,7 @@ namespace TriviaBackend.Models.Entities
     public class BaseUser
     {
         [Key]
-        public string ID { get; set; } = Guid.NewGuid().ToString();
+        public string Id { get; set; } = Guid.NewGuid().ToString();
 
         public DateTime Created { get; set; } = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Utc);
 

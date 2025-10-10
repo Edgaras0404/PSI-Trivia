@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Records;
-using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Entities;
 
 namespace TriviaBackend.Services
 {

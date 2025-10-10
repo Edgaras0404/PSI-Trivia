@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using TriviaBackend.Models.Enums;
-using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Entities;
 
 namespace TriviaBackend.Data
 {

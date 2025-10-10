@@ -5,13 +5,13 @@ using System.Linq;
 using System.Text.Json;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Records;
-using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Entities;
 using TriviaBackend.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace TriviaBackend.Services
 {
-    public class QuestionService : ControllerBase
+    public class QuestionService
     {
         private readonly TriviaDbContext _dbContext;
         private List<TriviaQuestion> _questionBank;

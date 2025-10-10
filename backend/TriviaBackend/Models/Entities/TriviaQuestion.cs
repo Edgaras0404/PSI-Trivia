@@ -1,6 +1,6 @@
 using TriviaBackend.Models.Enums;
 
-namespace TriviaBackend.Models.Objects
+namespace TriviaBackend.Models.Entities
 {
     public class TriviaQuestion
     {

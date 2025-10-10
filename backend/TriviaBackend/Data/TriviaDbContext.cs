@@ -13,17 +13,23 @@ namespace TriviaBackend.Data
             Database.EnsureCreated();
         }
         public required DbSet<TriviaQuestion> Questions { get; set; }
+        public required DbSet<BaseUser> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<BaseUser>()
+                .HasDiscriminator<string>("user_type")
+                .HasValue<Player>("Player")
+                .HasValue<Admin>("Admin");
+
             modelBuilder.Entity<TriviaQuestion>()
-                .Property(q => q.Options)
-                .HasConversion(
-                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                    v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
-                );
+                    .Property(q => q.Options)
+                    .HasConversion(
+                        v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                        v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
+                    );
 
             modelBuilder.Entity<TriviaQuestion>().HasData(
                 new TriviaQuestion

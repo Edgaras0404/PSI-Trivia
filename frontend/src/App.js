@@ -346,7 +346,7 @@ function TriviaGame({ username, onLogout }) {
                         </div>
                         <div className="timer">
                             <Clock className="icon" />
-                            <span>{timeLeft}s</span>
+                            <span>{showAnswer ? 'Time\'s up!' : `${timeLeft}s`}</span>
                         </div>
                     </div>
 

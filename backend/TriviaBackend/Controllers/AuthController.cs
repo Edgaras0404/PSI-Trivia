@@ -27,7 +27,7 @@ namespace TriviaBackend.Controllers
                 return Conflict("Username already exists");
             }
 
-            BaseUser user = new();
+            BaseUser user = new Player();
             var hashedPassword = new PasswordHasher<BaseUser>().HashPassword(user, request.Password);
             user.Username = request.Username;
             user.PasswordHash = hashedPassword;
@@ -35,6 +35,29 @@ namespace TriviaBackend.Controllers
             await _context.SaveChangesAsync();
             return Ok(user);
         }
+        [HttpPost("elevate-to-admin")]
+        public async Task<ActionResult<BaseUser>> ElevatePriveleges(string Id)
+        {
+            var user = _context.Users.Find(Id);
+            if (user == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            var admin = new Admin
+            {
+                Id = user.Id,
+                Created = user.Created,
+                Username = user.Username,
+                PasswordHash = user.PasswordHash
+            };
+
+            _context.Users.Remove(user);
+            _context.Users.Add(admin);
+            await _context.SaveChangesAsync();
+            return Ok(user);
+        }
+
         [HttpPost("login")]
         public async Task<ActionResult<string>> Login(BaseUserDTO request)
         {
@@ -53,10 +76,10 @@ namespace TriviaBackend.Controllers
         private string CreateToken(BaseUser user)
         {
             var claims = new List<Claim>
-        {
-            new(ClaimTypes.Name, user.Username),
-            new(ClaimTypes.NameIdentifier, user.Id),
-        };
+            {
+                new(ClaimTypes.Name, user.Username),
+                new(ClaimTypes.NameIdentifier, user.Id),
+            };
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(configuration.GetValue<string>("AppSettings:Token")!));
             var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

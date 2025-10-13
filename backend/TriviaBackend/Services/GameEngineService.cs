@@ -97,6 +97,9 @@ namespace TriviaBackend.Services
 
         public bool NextQuestion()
         {
+            if (DateTime.Now - _questionStartTime < TimeSpan.FromSeconds(5))
+                return true;
+
             if (_gameQuestions.Count == 0)
             {
                 EndGame();

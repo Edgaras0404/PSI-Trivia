@@ -207,6 +207,39 @@ function TriviaGame({ username, onLogout }) {
         );
     }
 
+    if (showGlobalLeaderboard) {
+        return (
+            <div className="modal-overlay" onClick={() => setShowGlobalLeaderboard(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h2>Global Leaderboard</h2>
+                        <button onClick={() => setShowGlobalLeaderboard(false)} className="close-button">×</button>
+                    </div>
+                    <div className="modal-body">
+                        {globalLeaderboard.length === 0 ? (
+                            <p className="empty-leaderboard">No players yet. Be the first!</p>
+                        ) : (
+                            <div className="global-leaderboard">
+                                {globalLeaderboard.map((player, index) => (
+                                    <div key={index} className={`leaderboard-row ${player.username === username ? 'highlight' : ''}`}>
+                                        <div className="rank-badge">{player.rank}</div>
+                                        <div className="player-details">
+                                            <div className="player-username">{player.username}</div>
+                                            <div className="player-games">
+                                                {player.gamesPlayed} games • {player.totalPoints} total points
+                                            </div>
+                                        </div>
+                                        <div className="player-elo">{player.elo} ELO</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (gameState === 'menu') {
         return (
             <div className="container">
@@ -225,35 +258,6 @@ function TriviaGame({ username, onLogout }) {
                         </button>
                     </div>
                 </div>
-
-                {showGlobalLeaderboard && (
-                    <div className="modal-overlay" onClick={() => setShowGlobalLeaderboard(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h2>Global Leaderboard</h2>
-                                <button onClick={() => setShowGlobalLeaderboard(false)} className="close-button">×</button>
-                            </div>
-                            <div className="modal-body">
-                                {globalLeaderboard.length === 0 ? (
-                                    <p className="empty-leaderboard">No players yet. Be the first!</p>
-                                ) : (
-                                    <div className="global-leaderboard">
-                                        {globalLeaderboard.map((player, index) => (
-                                            <div key={index} className={`leaderboard-row ${player.username === username ? 'highlight' : ''}`}>
-                                                <div className="rank-badge">{player.rank}</div>
-                                                <div className="player-details">
-                                                    <div className="player-username">{player.username}</div>
-                                                    <div className="player-games">{player.gamesPlayed} games played</div>
-                                                </div>
-                                                <div className="player-elo">{player.elo} ELO</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 <div className="card">
                     <div className="header">

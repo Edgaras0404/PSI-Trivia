@@ -27,14 +27,22 @@ namespace TriviaBackend.Controllers
                 return Conflict("Username already exists");
             }
 
-            BaseUser user = new();
-            var hashedPassword = new PasswordHasher<BaseUser>().HashPassword(user, request.Password);
-            user.Username = request.Username;
+            Player user = new Player
+            {
+                Username = request.Username,
+                Elo = 1000,
+                GamesPlayed = 0,
+                TotalPoints = 0
+            };
+
+            var hashedPassword = new PasswordHasher<Player>().HashPassword(user, request.Password);
             user.PasswordHash = hashedPassword;
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return Ok(user);
         }
+
         [HttpPost("login")]
         public async Task<ActionResult<string>> Login(BaseUserDTO request)
         {

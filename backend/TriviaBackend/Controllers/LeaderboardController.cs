@@ -32,6 +32,7 @@ namespace TriviaBackend.Controllers
                     rank = index + 1,
                     username = player.Username,
                     elo = player.Elo,
+                    totalPoints = player.TotalPoints,
                     gamesPlayed = player.GamesPlayed,
                     joinDate = player.Created
                 });

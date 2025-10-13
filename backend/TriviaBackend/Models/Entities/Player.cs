@@ -4,6 +4,7 @@
     {
         public int Elo { get; set; }
         public int GamesPlayed { get; set; }
+        public int TotalPoints { get; set; }
 
         public int CompareTo(Player? other)
         {
@@ -22,7 +23,7 @@
 
         public override string ToString()
         {
-            return $"{Username} - Elo: {Elo}, Games: {GamesPlayed}";
+            return $"{Username} - Elo: {Elo}, Games: {GamesPlayed}, Points: {TotalPoints}";
         }
     }
 }

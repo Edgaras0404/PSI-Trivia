@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Records;
-using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Entities;
 
 namespace TriviaBackend.Services
 {
@@ -97,6 +97,9 @@ namespace TriviaBackend.Services
 
         public bool NextQuestion()
         {
+            if (DateTime.Now - _questionStartTime < TimeSpan.FromSeconds(5))
+                return true;
+
             if (_gameQuestions.Count == 0)
             {
                 EndGame();
@@ -140,11 +143,9 @@ namespace TriviaBackend.Services
 
         public List<GamePlayer> GetCurrentGameLeaderboard()
         {
-            return _players
-                .Where(p => p.IsActive)
-                .OrderByDescending(p => p.CurrentGameScore)
-                .ThenByDescending(p => p.CorrectAnswersInGame)
-                .ToList();
+            var activePlayers = _players.Where(p => p.IsActive).ToList();
+            activePlayers.Sort();
+            return activePlayers;
         }
 
         public void EndGame()

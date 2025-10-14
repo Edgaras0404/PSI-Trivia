@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Users, Trophy, Clock, Play, LogIn, Plus } from 'lucide-react';
+import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut } from 'lucide-react';
+import Login from './Login';
 import './App.css';
 
 class GameConnection {
@@ -53,11 +54,10 @@ class GameConnection {
     }
 }
 
-export default function TriviaGame() {
+function TriviaGame({ username, onLogout }) {
     const [connection] = useState(() => new GameConnection());
     const [connected, setConnected] = useState(false);
     const [gameState, setGameState] = useState('menu');
-    const [playerName, setPlayerName] = useState('');
     const [gameId, setGameId] = useState('');
     const [playerId, setPlayerId] = useState(null);
     const [players, setPlayers] = useState([]);
@@ -67,6 +67,8 @@ export default function TriviaGame() {
     const [leaderboard, setLeaderboard] = useState([]);
     const [timeLeft, setTimeLeft] = useState(0);
     const [showAnswer, setShowAnswer] = useState(false);
+    const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
+    const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
 
     useEffect(() => {
         const initConnection = async () => {
@@ -158,13 +160,12 @@ export default function TriviaGame() {
     }, [timeLeft, currentQuestion, showAnswer]);
 
     const createGame = async () => {
-        if (!playerName.trim()) return;
-        await connection.invoke('CreateGame', playerName, 5, 10);
+        await connection.invoke('CreateGame', username, 5, 10);
     };
 
     const joinGame = async () => {
-        if (!playerName.trim() || !gameId.trim()) return;
-        await connection.invoke('JoinGame', gameId.toUpperCase(), playerName);
+        if (!gameId.trim()) return;
+        await connection.invoke('JoinGame', gameId.toUpperCase(), username);
     };
 
     const startGame = async () => {
@@ -185,6 +186,19 @@ export default function TriviaGame() {
         await connection.invoke('NextQuestion', gameId);
     };
 
+    const fetchGlobalLeaderboard = async () => {
+        try {
+            const response = await fetch('http://localhost:5001/api/leaderboard/global?top=100');
+            if (response.ok) {
+                const data = await response.json();
+                setGlobalLeaderboard(data);
+                setShowGlobalLeaderboard(true);
+            }
+        } catch (error) {
+            console.error('Error fetching leaderboard:', error);
+        }
+    };
+
     if (!connected) {
         return (
             <div className="container">
@@ -193,9 +207,58 @@ export default function TriviaGame() {
         );
     }
 
+    if (showGlobalLeaderboard) {
+        return (
+            <div className="modal-overlay" onClick={() => setShowGlobalLeaderboard(false)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="modal-header">
+                        <h2>Global Leaderboard</h2>
+                        <button onClick={() => setShowGlobalLeaderboard(false)} className="close-button">×</button>
+                    </div>
+                    <div className="modal-body">
+                        {globalLeaderboard.length === 0 ? (
+                            <p className="empty-leaderboard">No players yet. Be the first!</p>
+                        ) : (
+                            <div className="global-leaderboard">
+                                {globalLeaderboard.map((player, index) => (
+                                    <div key={index} className={`leaderboard-row ${player.username === username ? 'highlight' : ''}`}>
+                                        <div className="rank-badge">{player.rank}</div>
+                                        <div className="player-details">
+                                            <div className="player-username">{player.username}</div>
+                                            <div className="player-games">
+                                                {player.gamesPlayed} games • {player.totalPoints} total points
+                                            </div>
+                                        </div>
+                                        <div className="player-elo">{player.elo} ELO</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (gameState === 'menu') {
         return (
             <div className="container">
+                <div className="user-header">
+                    <div className="user-info">
+                        <span>Playing as: <strong>{username}</strong></span>
+                    </div>
+                    <div className="header-buttons">
+                        <button onClick={fetchGlobalLeaderboard} className="leaderboard-button">
+                            <Trophy className="icon" />
+                            Leaderboard
+                        </button>
+                        <button onClick={onLogout} className="logout-button">
+                            <LogOut className="icon" />
+                            Logout
+                        </button>
+                    </div>
+                </div>
+
                 <div className="card">
                     <div className="header">
                         <Trophy className="icon-large" />
@@ -203,20 +266,9 @@ export default function TriviaGame() {
                         <p>Test your knowledge with friends!</p>
                     </div>
 
-                    <div className="form-group">
-                        <input
-                            type="text"
-                            placeholder="Enter your name"
-                            value={playerName}
-                            onChange={(e) => setPlayerName(e.target.value)}
-                            className="input"
-                        />
-                    </div>
-
                     <div className="button-group">
                         <button
                             onClick={createGame}
-                            disabled={!playerName.trim()}
                             className="button button-primary"
                         >
                             <Plus className="icon" />
@@ -234,7 +286,7 @@ export default function TriviaGame() {
                             />
                             <button
                                 onClick={joinGame}
-                                disabled={!playerName.trim() || !gameId.trim()}
+                                disabled={!gameId.trim()}
                                 className="button button-secondary"
                             >
                                 <LogIn className="icon" />
@@ -294,7 +346,7 @@ export default function TriviaGame() {
                         </div>
                         <div className="timer">
                             <Clock className="icon" />
-                            <span>{timeLeft}s</span>
+                            <span>{showAnswer ? 'Time\'s up!' : `${timeLeft}s`}</span>
                         </div>
                     </div>
 
@@ -384,7 +436,6 @@ export default function TriviaGame() {
                     <button
                         onClick={() => {
                             setGameState('menu');
-                            setPlayerName('');
                             setGameId('');
                             setPlayerId(null);
                             setPlayers([]);
@@ -401,4 +452,36 @@ export default function TriviaGame() {
     }
 
     return null;
+}
+
+export default function App() {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [username, setUsername] = useState('');
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const savedUsername = localStorage.getItem('username');
+        if (token && savedUsername) {
+            setIsLoggedIn(true);
+            setUsername(savedUsername);
+        }
+    }, []);
+
+    const handleLoginSuccess = (user) => {
+        setIsLoggedIn(true);
+        setUsername(user);
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('username');
+        setIsLoggedIn(false);
+        setUsername('');
+    };
+
+    if (!isLoggedIn) {
+        return <Login onLoginSuccess={handleLoginSuccess} />;
+    }
+
+    return <TriviaGame username={username} onLogout={handleLogout} />;
 }

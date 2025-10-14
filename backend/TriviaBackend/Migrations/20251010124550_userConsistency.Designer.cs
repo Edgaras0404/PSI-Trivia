@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TriviaBackend.Data;
@@ -11,9 +12,11 @@ using TriviaBackend.Data;
 namespace TriviaBackend.Migrations
 {
     [DbContext(typeof(TriviaDbContext))]
-    partial class TriviaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251010124550_userConsistency")]
+    partial class userConsistency
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -146,9 +149,6 @@ namespace TriviaBackend.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("GamesPlayed")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TotalPoints")
                         .HasColumnType("integer");
 
                     b.HasDiscriminator().HasValue("Player");

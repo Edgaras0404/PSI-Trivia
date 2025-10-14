@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.SignalR;
 using TriviaBackend.Models;
 using TriviaBackend.Services;
 using TriviaBackend.Models.Enums;
-using TriviaBackend.Models.Objects;
+using TriviaBackend.Models.Entities;
+using TriviaBackend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace TriviaBackend.Hubs
 {
@@ -12,12 +14,15 @@ namespace TriviaBackend.Hubs
         private static readonly Dictionary<string, string> _playerGameMap = new();
         private static readonly Dictionary<string, CancellationTokenSource> _gameTimers = new();
         private static readonly Dictionary<string, bool> _questionRevealed = new();
+        private static readonly Dictionary<string, Dictionary<int, string>> _gamePlayerUsernames = new();
         private static IHubContext<GameHub>? _staticHubContext;
         private readonly QuestionService _questionService;
+        private readonly TriviaDbContext _dbContext;
 
-        public GameHub(QuestionService questionService)
+        public GameHub(QuestionService questionService, TriviaDbContext dbContext)
         {
             _questionService = questionService;
+            _dbContext = dbContext;
         }
 
         public static void SetHubContext(IHubContext<GameHub> hubContext)
@@ -42,6 +47,8 @@ namespace TriviaBackend.Hubs
             var playerId = await JoinGameInternal(gameId, playerName, gameEngine);
 
             _activeGames[gameId] = gameEngine;
+            _gamePlayerUsernames[gameId] = new Dictionary<int, string>();
+            _gamePlayerUsernames[gameId][playerId] = playerName;
 
             await Clients.Caller.SendAsync("GameCreated", new
             {
@@ -66,7 +73,12 @@ namespace TriviaBackend.Hubs
             }
 
             var gameEngine = _activeGames[gameId];
-            await JoinGameInternal(gameId, playerName, gameEngine);
+            var playerId = await JoinGameInternal(gameId, playerName, gameEngine);
+
+            if (!_gamePlayerUsernames.ContainsKey(gameId))
+                _gamePlayerUsernames[gameId] = new Dictionary<int, string>();
+
+            _gamePlayerUsernames[gameId][playerId] = playerName;
         }
 
         private async Task<int> JoinGameInternal(string gameId, string playerName, GameEngineService gameEngine)
@@ -254,7 +266,7 @@ namespace TriviaBackend.Hubs
             {
                 questionNumber = gameEngine.CurrentQuestionNumber,
                 questionText = question.QuestionText,
-                options = question.Options,
+                options = question.AnswerOptions,
                 category = question.Category.ToString(),
                 difficulty = question.Difficulty.ToString(),
                 timeLimit = question.TimeLimit,
@@ -271,12 +283,10 @@ namespace TriviaBackend.Hubs
                     Console.WriteLine($"[TIMER] Started for {question.TimeLimit} seconds for game {gameId}");
                     await Task.Delay(TimeSpan.FromSeconds(question.TimeLimit), cts.Token);
 
-                    // Time's up
                     if (!cts.Token.IsCancellationRequested && _staticHubContext != null)
                     {
                         Console.WriteLine($"[TIMER] Time's up for game {gameId}!");
 
-                        // Use static hub context to send messages from background thread
                         await _staticHubContext.Clients.Group(gameId).SendAsync("TimeUp");
                         Console.WriteLine($"[TIMER] Sent TimeUp message to group {gameId}");
 
@@ -335,7 +345,7 @@ namespace TriviaBackend.Hubs
             await _staticHubContext.Clients.Group(gameId).SendAsync("AnswerRevealed", new
             {
                 correctAnswer = question.CorrectAnswerIndex,
-                correctText = question.Options[question.CorrectAnswerIndex],
+                correctText = question.AnswerOptions[question.CorrectAnswerIndex],
                 leaderboard = leaderboard.Select(p => new
                 {
                     p.Id,
@@ -389,6 +399,8 @@ namespace TriviaBackend.Hubs
 
             var finalLeaderboard = gameEngine.GetCurrentGameLeaderboard();
 
+            await UpdatePlayerStats(gameId, finalLeaderboard);
+
             await _staticHubContext.Clients.Group(gameId).SendAsync("GameEnded", new
             {
                 leaderboard = finalLeaderboard.Select(p => new
@@ -401,7 +413,79 @@ namespace TriviaBackend.Hubs
             });
 
             _activeGames.Remove(gameId);
+            _gamePlayerUsernames.Remove(gameId);
             Console.WriteLine($"Game {gameId} ended and removed from active games");
+        }
+
+        private async Task UpdatePlayerStats(string gameId, List<GamePlayer> finalLeaderboard)
+        {
+            try
+            {
+                Console.WriteLine($"=== UpdatePlayerStats called for game {gameId} ===");
+
+                if (!_gamePlayerUsernames.ContainsKey(gameId))
+                {
+                    Console.WriteLine($"ERROR: No player usernames found for game {gameId}");
+                    return;
+                }
+
+                var playerUsernames = _gamePlayerUsernames[gameId];
+                Console.WriteLine($"Found {playerUsernames.Count} players in game");
+
+                foreach (var gamePlayer in finalLeaderboard)
+                {
+                    Console.WriteLine($"Processing player ID {gamePlayer.Id}...");
+
+                    if (!playerUsernames.ContainsKey(gamePlayer.Id))
+                    {
+                        Console.WriteLine($"ERROR: No username found for player ID {gamePlayer.Id}");
+                        continue;
+                    }
+
+                    var username = playerUsernames[gamePlayer.Id];
+                    Console.WriteLine($"Looking up username: {username}");
+
+                    var player = await _dbContext.Users
+                        .OfType<Player>()
+                        .FirstOrDefaultAsync(p => p.Username == username);
+
+                    if (player != null)
+                    {
+                        Console.WriteLine($"Found player in DB: {player.Username}, Current ELO: {player.Elo}, Current Points: {player.TotalPoints}, Current Games: {player.GamesPlayed}");
+
+                        var eloChange = CalculateEloChange(gamePlayer, finalLeaderboard);
+                        player.Elo += eloChange;
+                        player.GamesPlayed++;
+                        player.TotalPoints += gamePlayer.CurrentGameScore;
+
+                        Console.WriteLine($"Updated {username}: +{eloChange} ELO, +{gamePlayer.CurrentGameScore} Points, New ELO: {player.Elo}, New Total Points: {player.TotalPoints}, New Games: {player.GamesPlayed}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"ERROR: Player '{username}' not found in database");
+                    }
+                }
+
+                var changes = await _dbContext.SaveChangesAsync();
+                Console.WriteLine($"Saved {changes} changes to database for game {gameId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR updating player stats: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            }
+        }
+
+        private int CalculateEloChange(GamePlayer player, List<GamePlayer> leaderboard)
+        {
+            var position = leaderboard.FindIndex(p => p.Id == player.Id);
+            var totalPlayers = leaderboard.Count;
+
+            if (position == 0) return 25;
+            if (position == 1) return 15;
+            if (position == 2) return 10;
+            if (position < totalPlayers / 2) return 5;
+            return -5;
         }
 
         public async Task GetAvailableCategories()

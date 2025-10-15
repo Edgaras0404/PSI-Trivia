@@ -20,10 +20,15 @@ namespace TriviaBackend
             {
                 options.AddPolicy("AllowAll", policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                    policy.WithOrigins(
+                        "http://localhost:3000", //front http
+                        "http://localhost:3001", //front https
+                        "http://localhost:5173",
+                        "https://localhost:5173" //Vite default port
+                        )
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
                 });
             });
 
@@ -45,6 +50,9 @@ namespace TriviaBackend
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+
+            //app.UseHttpsRedirection(); // Enforce HTTPS redirection from HTTP (5000 to HTTPS 5001)
 
             app.UseCors("AllowAll");
             app.UseAuthorization();

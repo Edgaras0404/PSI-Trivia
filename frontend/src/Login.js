@@ -14,7 +14,7 @@ const Login = ({ onLoginSuccess }) => {
         setLoading(true);
 
         const endpoint = isRegister ? 'register' : 'login';
-        const url = `http://localhost:5001/api/auth/${endpoint}`;
+        const url = `https://localhost:5001/api/auth/${endpoint}`;
 
         try {
             const response = await fetch(url, {

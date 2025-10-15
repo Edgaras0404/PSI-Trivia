@@ -13,7 +13,7 @@ namespace TriviaBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(DBService _DBService, IConfiguration configuration) : ControllerBase
+    public class AuthController(UserService _DBService, IConfiguration configuration) : ControllerBase
     {
         [HttpPost("register")]
         public async Task<ActionResult<BaseUser>> Register(BaseUserDTO request)

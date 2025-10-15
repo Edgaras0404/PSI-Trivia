@@ -2,26 +2,19 @@
 using Microsoft.EntityFrameworkCore;
 using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
+using TriviaBackend.Services;
 
 namespace TriviaBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LeaderboardController : ControllerBase
+    public class LeaderboardController(PlayerService _PlayerService) : ControllerBase
     {
-        private readonly TriviaDbContext _context;
-
-        public LeaderboardController(TriviaDbContext context)
-        {
-            _context = context;
-        }
 
         [HttpGet("global")]
         public async Task<ActionResult<IEnumerable<object>>> GetGlobalLeaderboard([FromQuery] int top = 100)
         {
-            var players = await _context.Users
-                .OfType<Player>()
-                .ToListAsync();
+            var players = await _PlayerService.GetAllPlayersAsync();
 
             players.Sort();
 
@@ -43,16 +36,12 @@ namespace TriviaBackend.Controllers
         [HttpGet("rank/{username}")]
         public async Task<ActionResult<object>> GetPlayerRank(string username)
         {
-            var targetPlayer = await _context.Users
-                .OfType<Player>()
-                .FirstOrDefaultAsync(p => p.Username == username);
+            var targetPlayer = await _PlayerService.GetPlayerByUsernameAsync(username);
 
             if (targetPlayer == null)
                 return NotFound("Player not found");
 
-            var allPlayers = await _context.Users
-                .OfType<Player>()
-                .ToListAsync();
+            var allPlayers = await _PlayerService.GetAllPlayersAsync();
 
             allPlayers.Sort();
 
@@ -71,9 +60,7 @@ namespace TriviaBackend.Controllers
         [HttpPost("update-stats")]
         public async Task<ActionResult> UpdatePlayerStats([FromBody] PlayerStatsUpdate statsUpdate)
         {
-            var player = await _context.Users
-                .OfType<Player>()
-                .FirstOrDefaultAsync(p => p.Username == statsUpdate.Username);
+            var player = await _PlayerService.GetPlayerByUsernameAsync(statsUpdate.Username);
 
             if (player == null)
                 return NotFound("Player not found");
@@ -81,7 +68,7 @@ namespace TriviaBackend.Controllers
             player.Elo += statsUpdate.EloChange;
             player.GamesPlayed++;
 
-            await _context.SaveChangesAsync();
+            await _PlayerService.UpdatePlayerAsync(player);
 
             return Ok(new
             {

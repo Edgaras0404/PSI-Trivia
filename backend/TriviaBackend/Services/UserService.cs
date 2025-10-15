@@ -1,11 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
 using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 
 namespace TriviaBackend.Services
 {
-    public class DBService(TriviaDbContext context)
+    public class UserService(TriviaDbContext context)
     {
         private readonly TriviaDbContext _context = context;
 
@@ -25,5 +24,6 @@ namespace TriviaBackend.Services
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
         }
+
     }
 }

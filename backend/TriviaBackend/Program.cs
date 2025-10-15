@@ -22,9 +22,7 @@ namespace TriviaBackend
                 {
                     policy.WithOrigins(
                         "http://localhost:3000", //front http
-                        "http://localhost:3001", //front https
-                        "http://localhost:5173",
-                        "https://localhost:5173" //Vite default port
+                        "http://localhost:3001" //front https
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()

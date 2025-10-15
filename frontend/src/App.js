@@ -72,7 +72,7 @@ function TriviaGame({ username, onLogout }) {
 
     useEffect(() => {
         const initConnection = async () => {
-            const success = await connection.connect('http://localhost:5001/gamehub');
+            const success = await connection.connect('https://localhost:5001/gamehub');
             setConnected(success);
         };
         initConnection();
@@ -188,7 +188,7 @@ function TriviaGame({ username, onLogout }) {
 
     const fetchGlobalLeaderboard = async () => {
         try {
-            const response = await fetch('http://localhost:5001/api/leaderboard/global?top=100');
+            const response = await fetch('https://localhost:5001/api/leaderboard/global?top=100');
             if (response.ok) {
                 const data = await response.json();
                 setGlobalLeaderboard(data);

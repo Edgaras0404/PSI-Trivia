@@ -358,9 +358,9 @@ function TriviaGame({ username, onLogout }) {
 
                             if (showAnswer) {
                                 if (index === currentQuestion.correctAnswer) {
-                                    className += ' option-correct';
+                                    className += ' option-selected';
                                 } else if (index === selectedAnswer) {
-                                    className += ' option-incorrect';
+                                    className += ' option-selected';
                                 }
                             } else if (selectedAnswer === index) {
                                 className += ' option-selected';

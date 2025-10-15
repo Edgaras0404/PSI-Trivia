@@ -22,7 +22,7 @@ namespace TriviaBackend
                 {
                     policy.WithOrigins(
                         "http://localhost:3000", //front http
-                        "http://localhost:3001" //front https
+                        "https://localhost:3001" //front https
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()
@@ -50,7 +50,7 @@ namespace TriviaBackend
             }
 
 
-            //app.UseHttpsRedirection(); // Enforce HTTPS redirection from HTTP (5000 to HTTPS 5001)
+            app.UseHttpsRedirection(); // Enforce HTTPS redirection from HTTP (5000 to HTTPS 5001)
 
             app.UseCors("AllowAll");
             app.UseAuthorization();

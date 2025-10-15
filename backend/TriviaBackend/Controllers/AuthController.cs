@@ -3,26 +3,23 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Security.Claims;
 using System.Text;
-using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using TriviaBackend.Services;
 
 namespace TriviaBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(TriviaDbContext _context, IConfiguration configuration) : ControllerBase
+    public class AuthController(DBService _DBService, IConfiguration configuration) : ControllerBase
     {
         [HttpPost("register")]
         public async Task<ActionResult<BaseUser>> Register(BaseUserDTO request)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == request.Username))
+            var existingUser = await _DBService.GetUserByUsernameAsync(request.Username);
+            if (existingUser != null)
             {
                 return Conflict("Username already exists");
             }
@@ -38,14 +35,13 @@ namespace TriviaBackend.Controllers
             var hashedPassword = new PasswordHasher<Player>().HashPassword(user, request.Password);
             user.PasswordHash = hashedPassword;
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            _DBService.AddUserAsync(user).Wait();
             return Ok(user);
         }
         [HttpPost("elevate-to-admin")]
         public async Task<ActionResult<BaseUser>> ElevatePriveleges(string Id)
         {
-            var user = _context.Users.Find(Id);
+            var user = _DBService.GetUserByIdAsync(Id).Result;
             if (user == null)
             {
                 return BadRequest("User not found");
@@ -59,16 +55,15 @@ namespace TriviaBackend.Controllers
                 PasswordHash = user.PasswordHash
             };
 
-            _context.Users.Remove(user);
-            _context.Users.Add(admin);
-            await _context.SaveChangesAsync();
+            await _DBService.RemoveUserAsync(user);
+            await _DBService.AddUserAsync(admin);
             return Ok(user);
         }
 
         [HttpPost("login")]
         public async Task<ActionResult<string>> Login(BaseUserDTO request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+            var user = await _DBService.GetUserByUsernameAsync(request.Username);
             if (user == null)
             {
                 return BadRequest("Incorrect credentials");

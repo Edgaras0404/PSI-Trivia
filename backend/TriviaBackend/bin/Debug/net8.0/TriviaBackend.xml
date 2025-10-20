@@ -13,6 +13,14 @@
             <param name="questionsPerGame"></param>
             <returns></returns>
         </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.JoinGame(System.String,System.String)">
+            <summary>
+            Connect a player to a game
+            </summary>
+            <param name="gameId"></param>
+            <param name="playerName"></param>
+            <returns></returns>
+        </member>
         <member name="M:TriviaBackend.Hubs.GameHub.StartGame(System.String,System.String[],System.String)">
             <summary>
             Start the trivia match
@@ -20,6 +28,69 @@
             <param name="gameId"></param>
             <param name="categories"></param>
             <param name="difficulty"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.SubmitAnswer(System.String,System.Int32,System.Int32)">
+            <summary>
+            Send player's answer to be processed
+            </summary>
+            <param name="gameId"></param>
+            <param name="playerId"></param>
+            <param name="answerIndex"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.NextQuestion(System.String)">
+            <summary>
+            Get the next question in the game sequence
+            </summary>
+            <param name="gameId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.RevealAnswerAndProgress(System.String,System.Int32,TriviaBackend.Services.GameEngineService)">
+            <summary>
+            Send answer to all players and automatically go to next question after set amount of time
+            </summary>
+            <param name="gameId"></param>
+            <param name="autoProgressMillisecodns"></param>
+            <param name="gameEngine"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.EndGame(System.String,TriviaBackend.Services.GameEngineService)">
+            <summary>
+            End the ongoing match
+            </summary>
+            <param name="gameId"></param>
+            <param name="gameEngine"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.UpdatePlayerStats(System.String,System.Collections.Generic.List{TriviaBackend.Models.Entities.GamePlayer})">
+            <summary>
+            Update player information in-game
+            </summary>
+            <param name="gameId"></param>
+            <param name="finalLeaderboard"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.CalculateEloChange(TriviaBackend.Models.Entities.GamePlayer,System.Collections.Generic.List{TriviaBackend.Models.Entities.GamePlayer})">
+            <summary>
+            Calculate elo difference after the game to change elo points
+            </summary>
+            <param name="player"></param>
+            <param name="leaderboard"></param>
+            <seealso cref="!:https://en.wikipedia.org/wiki/Elo_rating_system"/>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.GetAvailableCategories">
+            <summary>
+            Get a list of every existing category
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.OnDisconnectedAsync(System.Exception)">
+            <summary>
+            Remove player from game if connection drops
+            </summary>
+            <param name="exception"></param>
             <returns></returns>
         </member>
         <member name="T:TriviaBackend.Migrations.InitialCreate">

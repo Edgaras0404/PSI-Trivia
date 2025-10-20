@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>TriviaBackend</name>
+    </assembly>
+    <members>
+        <member name="M:TriviaBackend.Hubs.GameHub.CreateGame(System.String,System.Int32,System.Int32)">
+            <summary>
+            Create a new game with random Id
+            </summary>
+            <param name="playerName"></param>
+            <param name="maxPlayers"></param>
+            <param name="questionsPerGame"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.StartGame(System.String,System.String[],System.String)">
+            <summary>
+            Start the trivia match
+            </summary>
+            <param name="gameId"></param>
+            <param name="categories"></param>
+            <param name="difficulty"></param>
+            <returns></returns>
+        </member>
+        <member name="T:TriviaBackend.Migrations.InitialCreate">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.InitialCreate.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.InitialCreate.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.ExampleQuestion">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.ExampleQuestion.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.ExampleQuestion.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.SeedQuestion">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.SeedQuestion.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.SeedQuestion.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.SeedExampleQuestion">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.SeedExampleQuestion.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.SeedExampleQuestion.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.SeedQuestion1">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.SeedQuestion1.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.SeedQuestion1.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.SeedQuestion1.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.ChangeAnswerOptions">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.ChangeAnswerOptions.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.ChangeAnswerOptions.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.ChangeAnswerOptions.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.AddUserTable">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.AddUserTable.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.AddUserTable.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.AddUserTable.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.userConsistency">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.userConsistency.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.userConsistency.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.userConsistency.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.AddTotalPointsToPlayer">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.AddTotalPointsToPlayer.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.AddTotalPointsToPlayer.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.AddTotalPointsToPlayer.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

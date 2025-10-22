@@ -11,10 +11,20 @@ using TriviaBackend.Services;
 
 namespace TriviaBackend.Controllers
 {
+    /// <summary>
+    /// Controller for handling authentication and authorization
+    /// </summary>
+    /// <param name="_DBService"></param>
+    /// <param name="configuration"></param>
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController(UserService _DBService, IConfiguration configuration) : ControllerBase
     {
+        /// <summary>
+        /// Register a new player
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost("register")]
         public async Task<ActionResult<BaseUser>> Register(BaseUserDTO request)
         {
@@ -38,6 +48,12 @@ namespace TriviaBackend.Controllers
             _DBService.AddUserAsync(user).Wait();
             return Ok(user);
         }
+
+        /// <summary>
+        /// Elevate player to admin, admin does not have elo and points
+        /// </summary>
+        /// <param name="Id"></param>
+        /// <returns></returns>
         [HttpPost("elevate-to-admin")]
         public async Task<ActionResult<BaseUser>> ElevatePriveleges(string Id)
         {
@@ -60,6 +76,11 @@ namespace TriviaBackend.Controllers
             return Ok(user);
         }
 
+        /// <summary>
+        /// Login user with jwt
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost("login")]
         public async Task<ActionResult<string>> Login(BaseUserDTO request)
         {

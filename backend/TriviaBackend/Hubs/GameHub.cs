@@ -10,7 +10,12 @@ using static System.Net.WebRequestMethods;
 
 namespace TriviaBackend.Hubs
 {
-    public class GameHub : Hub
+    /// <summary>
+    /// Class for managing player activity and game progression in a match
+    /// </summary>
+    /// <param name="questionService"></param>
+    /// <param name="dbContext"></param>
+    public class GameHub(QuestionService questionService, TriviaDbContext dbContext) : Hub
     {
         private static readonly Dictionary<string, GameEngineService> _activeGames = new();
         private static readonly Dictionary<string, string> _playerGameMap = new();
@@ -18,14 +23,8 @@ namespace TriviaBackend.Hubs
         private static readonly Dictionary<string, bool> _questionRevealed = new();
         private static readonly Dictionary<string, Dictionary<int, string>> _gamePlayerUsernames = new();
         private static IHubContext<GameHub>? _staticHubContext;
-        private readonly QuestionService _questionService;
-        private readonly TriviaDbContext _dbContext;
-
-        public GameHub(QuestionService questionService, TriviaDbContext dbContext)
-        {
-            _questionService = questionService;
-            _dbContext = dbContext;
-        }
+        private readonly QuestionService _questionService = questionService;
+        private readonly TriviaDbContext _dbContext = dbContext;
 
         public static void SetHubContext(IHubContext<GameHub> hubContext)
         {
@@ -306,17 +305,17 @@ namespace TriviaBackend.Hubs
                 points = question.Points
             });
 
-            var cts = new CancellationTokenSource();
-            _gameTimers[gameId] = cts;
+            var cancelTokenSource = new CancellationTokenSource();
+            _gameTimers[gameId] = cancelTokenSource;
 
             _ = Task.Run(async () =>
             {
                 try
                 {
                     Console.WriteLine($"[TIMER] Started for {question.TimeLimit} seconds for game {gameId}");
-                    await Task.Delay(TimeSpan.FromSeconds(question.TimeLimit), cts.Token);
+                    await Task.Delay(TimeSpan.FromSeconds(question.TimeLimit), cancelTokenSource.Token);
 
-                    if (!cts.Token.IsCancellationRequested && _staticHubContext != null)
+                    if (!cancelTokenSource.Token.IsCancellationRequested && _staticHubContext != null)
                     {
                         Console.WriteLine($"[TIMER] Time's up for game {gameId}!");
 
@@ -337,11 +336,11 @@ namespace TriviaBackend.Hubs
                 }
                 finally
                 {
-                    if (_gameTimers.ContainsKey(gameId) && _gameTimers[gameId] == cts)
+                    if (_gameTimers.ContainsKey(gameId) && _gameTimers[gameId] == cancelTokenSource)
                     {
                         _gameTimers.Remove(gameId);
                     }
-                    cts.Dispose();
+                    cancelTokenSource.Dispose();
                 }
             });
         }

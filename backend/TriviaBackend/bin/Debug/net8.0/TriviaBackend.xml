@@ -4,6 +4,81 @@
         <name>TriviaBackend</name>
     </assembly>
     <members>
+        <member name="T:TriviaBackend.Controllers.AuthController">
+            <summary>
+            Controller for handling authentication and authorization
+            </summary>
+            <param name="_DBService"></param>
+            <param name="configuration"></param>
+        </member>
+        <member name="M:TriviaBackend.Controllers.AuthController.#ctor(TriviaBackend.Services.UserService,Microsoft.Extensions.Configuration.IConfiguration)">
+            <summary>
+            Controller for handling authentication and authorization
+            </summary>
+            <param name="_DBService"></param>
+            <param name="configuration"></param>
+        </member>
+        <member name="M:TriviaBackend.Controllers.AuthController.Register(TriviaBackend.Models.Entities.BaseUserDTO)">
+            <summary>
+            Register a new player
+            </summary>
+            <param name="request"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Controllers.AuthController.ElevatePriveleges(System.String)">
+            <summary>
+            Elevate player to admin, admin does not have elo and points
+            </summary>
+            <param name="Id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Controllers.AuthController.Login(TriviaBackend.Models.Entities.BaseUserDTO)">
+            <summary>
+            Login user with jwt
+            </summary>
+            <param name="request"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Controllers.LeaderboardController.GetGlobalLeaderboard(System.Int32)">
+            <summary>
+            Get global ranking of players by elo
+            </summary>
+            <param name="top"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Controllers.LeaderboardController.GetPlayerRank(System.String)">
+            <summary>
+            Get the position of a player in the global leaderboard
+            </summary>
+            <param name="username"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Controllers.LeaderboardController.UpdatePlayerStats(TriviaBackend.Models.Entities.PlayerStatsUpdate)">
+            <summary>
+            Update the elo of a player and increase GamesPlayed
+            </summary>
+            <param name="statsUpdate"></param>
+            <returns></returns>
+        </member>
+        <member name="T:TriviaBackend.Data.TriviaDbContext">
+            <summary>
+            Class for managing the database schema
+            </summary>
+        </member>
+        <member name="T:TriviaBackend.Hubs.GameHub">
+            <summary>
+            Class for managing player activity and game progression in a match
+            </summary>
+            <param name="questionService"></param>
+            <param name="dbContext"></param>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Data.TriviaDbContext)">
+            <summary>
+            Class for managing player activity and game progression in a match
+            </summary>
+            <param name="questionService"></param>
+            <param name="dbContext"></param>
+        </member>
         <member name="M:TriviaBackend.Hubs.GameHub.CreateGame(System.String,System.Int32,System.Int32)">
             <summary>
             Create a new game with random Id
@@ -191,6 +266,54 @@
         </member>
         <member name="M:TriviaBackend.Migrations.AddTotalPointsToPlayer.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Services.GameEngineService">
+            <summary>
+            Service for processing actions and events in a match. Works together with GameHub
+            <paramref name="questionService"/>
+            <paramref name="settings"/>
+            <paramref name="gameId"/>
+            </summary>
+        </member>
+        <member name="M:TriviaBackend.Services.GameEngineService.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Models.Entities.GameSettings,System.String)">
+            <summary>
+            Service for processing actions and events in a match. Works together with GameHub
+            <paramref name="questionService"/>
+            <paramref name="settings"/>
+            <paramref name="gameId"/>
+            </summary>
+        </member>
+        <member name="T:TriviaBackend.Services.QuestionService">
+            <summary>
+            Service for working with questions in the ongoing trivia match 
+            </summary>
+        </member>
+        <member name="M:TriviaBackend.Services.QuestionService.LoadQuestionsFromFile(System.String)">
+            <summary>
+            Populate _questionBank from a file
+            </summary>
+            <param name="filePath"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Services.QuestionService.GetQuestions(TriviaBackend.Models.Enums.QuestionCategory[],System.Nullable{TriviaBackend.Models.Enums.DifficultyLevel},System.Int32)">
+            <summary>
+            Get filtered questions from questionBank
+            </summary>
+            <param name="categories"></param>
+            <param name="maxDifficulty"></param>
+            <param name="count"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Services.QuestionService.AddQuestion(TriviaBackend.Models.Entities.TriviaQuestion)">
+            <summary>
+            Add question to the current question bank
+            </summary>
+            <param name="question"></param>
+        </member>
+        <member name="M:TriviaBackend.Services.QuestionService.LoadDBQuestions">
+            <summary>
+            Populate _questionBank from the database
+            </summary>
         </member>
     </members>
 </doc>

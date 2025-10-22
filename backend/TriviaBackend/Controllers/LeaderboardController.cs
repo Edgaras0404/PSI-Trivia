@@ -10,7 +10,11 @@ namespace TriviaBackend.Controllers
     [ApiController]
     public class LeaderboardController(PlayerService _PlayerService) : ControllerBase
     {
-
+        /// <summary>
+        /// Get global ranking of players by elo
+        /// </summary>
+        /// <param name="top"></param>
+        /// <returns></returns>
         [HttpGet("global")]
         public async Task<ActionResult<IEnumerable<object>>> GetGlobalLeaderboard([FromQuery] int top = 100)
         {
@@ -33,6 +37,11 @@ namespace TriviaBackend.Controllers
             return Ok(leaderboard);
         }
 
+        /// <summary>
+        /// Get the position of a player in the global leaderboard
+        /// </summary>
+        /// <param name="username"></param>
+        /// <returns></returns>
         [HttpGet("rank/{username}")]
         public async Task<ActionResult<object>> GetPlayerRank(string username)
         {
@@ -57,6 +66,11 @@ namespace TriviaBackend.Controllers
             });
         }
 
+        /// <summary>
+        /// Update the elo of a player and increase GamesPlayed
+        /// </summary>
+        /// <param name="statsUpdate"></param>
+        /// <returns></returns>
         [HttpPost("update-stats")]
         public async Task<ActionResult> UpdatePlayerStats([FromBody] PlayerStatsUpdate statsUpdate)
         {
@@ -77,12 +91,5 @@ namespace TriviaBackend.Controllers
                 totalGames = player.GamesPlayed
             });
         }
-    }
-
-    public class PlayerStatsUpdate
-    {
-        public string Username { get; set; } = string.Empty;
-        public int EloChange { get; set; }
-        public int PointsEarned { get; set; }
     }
 }

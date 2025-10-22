@@ -7,36 +7,29 @@ using TriviaBackend.Models.Entities;
 
 namespace TriviaBackend.Services
 {
-    public class GameEngineService
+    /// <summary>
+    /// Service for processing actions and events in a match. Works together with GameHub
+    /// <paramref name="questionService"/>
+    /// <paramref name="settings"/>
+    /// <paramref name="gameId"/>
+    /// </summary>
+    public class GameEngineService(QuestionService questionService, GameSettings settings = default, string? gameId = null)
     {
-        private readonly QuestionService _questionService;
-        private List<GamePlayer> _players;
-        private Queue<TriviaQuestion> _gameQuestions;
-        private Dictionary<int, List<GameAnswer>> _gameAnswers;
+        private readonly QuestionService _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
+        private List<GamePlayer> _players = new List<GamePlayer>();
+        private Queue<TriviaQuestion> _gameQuestions = new Queue<TriviaQuestion>();
+        private Dictionary<int, List<GameAnswer>> _gameAnswers = new Dictionary<int, List<GameAnswer>>();
         private TriviaQuestion? _currentQuestion;
         private DateTime _questionStartTime;
-        private GameSettings _settings;
+        private GameSettings _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;
 
-        public GameStatus Status { get; private set; }
-        public int CurrentQuestionNumber { get; private set; }
-        public string GameId { get; private set; }
+        public GameStatus Status { get; private set; } = GameStatus.Waiting;
+        public int CurrentQuestionNumber { get; private set; } = 0;
+        public string GameId { get; private set; } = gameId ?? Guid.NewGuid().ToString();
         public TriviaQuestion? CurrentQuestion => _currentQuestion;
 
         public TimeSpan TimeRemaining => _currentQuestion != null ?
             TimeSpan.FromSeconds(_currentQuestion.TimeLimit) - (DateTime.Now - _questionStartTime) : TimeSpan.Zero;
-
-        public GameEngineService(QuestionService questionService, GameSettings settings = default, string? gameId = null)
-        {
-            _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
-            _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;
-            GameId = gameId ?? Guid.NewGuid().ToString();
-
-            _players = new List<GamePlayer>();
-            _gameQuestions = new Queue<TriviaQuestion>();
-            _gameAnswers = new Dictionary<int, List<GameAnswer>>();
-            Status = GameStatus.Waiting;
-            CurrentQuestionNumber = 0;
-        }
 
         public bool AddPlayer(string playerName, int? playerId = null, DateTime? joinTime = null)
         {

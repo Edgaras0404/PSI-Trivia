@@ -5,9 +5,11 @@ using TriviaBackend.Models.Entities;
 
 namespace TriviaBackend.Data
 {
+    /// <summary>
+    /// Class for managing the database schema
+    /// </summary>
     public class TriviaDbContext : DbContext
     {
-
         public TriviaDbContext(DbContextOptions<TriviaDbContext> options) : base(options)
         {
             Database.EnsureCreated();

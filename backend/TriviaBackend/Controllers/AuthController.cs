@@ -87,7 +87,7 @@ namespace TriviaBackend.Controllers
             var user = await _DBService.GetUserByUsernameAsync(request.Username);
             if (user == null)
             {
-                return BadRequest("Incorrect credentials");
+                return BadRequest("User not found");
             }
             if (new PasswordHasher<BaseUser>().VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
             {

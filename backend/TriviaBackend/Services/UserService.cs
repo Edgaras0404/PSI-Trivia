@@ -10,8 +10,8 @@ namespace TriviaBackend.Services
 
         public async Task<BaseUser?> GetUserByIdAsync(string id) =>
             await _context.Users.FindAsync(id);
-        public async Task<BaseUser?> GetUserByUsernameAsync(string id) =>
-            await _context.Users.FindAsync(id);
+        public async Task<BaseUser?> GetUserByUsernameAsync(string usn) =>
+            await _context.Users.FirstAsync(u => u.Username == usn);
 
         public async Task AddUserAsync(BaseUser user)
         {

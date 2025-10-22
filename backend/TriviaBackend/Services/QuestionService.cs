@@ -11,6 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace TriviaBackend.Services
 {
+    /// <summary>
+    /// Service for working with questions in the ongoing trivia match 
+    /// </summary>
     public class QuestionService
     {
         private readonly TriviaDbContext _dbContext;
@@ -23,7 +26,11 @@ namespace TriviaBackend.Services
             //LoadDefaultQuestions();
             LoadDBQuestions();
         }
-
+        /// <summary>
+        /// Populate _questionBank from a file
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <returns></returns>
         public bool LoadQuestionsFromFile(string filePath)
         {
             try
@@ -47,9 +54,16 @@ namespace TriviaBackend.Services
             return false;
         }
 
+        /// <summary>
+        /// Get filtered questions from questionBank
+        /// </summary>
+        /// <param name="categories"></param>
+        /// <param name="maxDifficulty"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         public List<TriviaQuestion> GetQuestions(QuestionCategory[]? categories = null,
                                                DifficultyLevel? maxDifficulty = null,
-                                               int count = 10)
+                                               int count = 6)
         {
             var query = _questionBank.AsEnumerable();
 
@@ -85,6 +99,10 @@ namespace TriviaBackend.Services
             return categoryCounts;
         }
 
+        /// <summary>
+        /// Add question to the current question bank
+        /// </summary>
+        /// <param name="question"></param>
         public void AddQuestion(TriviaQuestion question)
         {
             question.Id = _questionBank.Count > 0 ? _questionBank.Max(q => q.Id) + 1 : 1;
@@ -145,6 +163,9 @@ namespace TriviaBackend.Services
             _questionBank.AddRange(defaultQuestions);
         }
 
+        /// <summary>
+        /// Populate _questionBank from the database
+        /// </summary>
         private void LoadDBQuestions()
         {
             var questions = _dbContext.Questions.ToList();

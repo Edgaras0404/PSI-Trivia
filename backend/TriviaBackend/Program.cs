@@ -35,6 +35,9 @@ namespace TriviaBackend
                 options.UseNpgsql(connectionString));
 
             builder.Services.AddScoped<QuestionService>();
+            builder.Services.AddScoped<UserService>();
+            builder.Services.AddScoped<PlayerService>();
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 

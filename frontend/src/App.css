@@ -217,12 +217,22 @@ body {
 
 .container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
     padding-top: 100px;
+    position: relative;
+    background: transparent;
+}
+
+.liquid-chrome-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
 }
 
 .loading {

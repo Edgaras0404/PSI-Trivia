@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './Login.css';
+import LiquidChrome from './LiquidChrome';
 
 const Login = ({ onLoginSuccess }) => {
     const [isRegister, setIsRegister] = useState(false);
@@ -50,60 +51,72 @@ const Login = ({ onLoginSuccess }) => {
     };
 
     return (
-        <div className="login-container">
-            <div className="login-box">
-                <h1>Trivia Game</h1>
-                <h2>{isRegister ? 'Register' : 'Login'}</h2>
-                
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label>Username</label>
-                        <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
-                            placeholder="Enter username"
-                        />
+        <>
+            <div className="liquid-chrome-background">
+                <LiquidChrome
+                    baseColor={[0.7, 0.2, 0.9]}
+                    speed={0.5}
+                    amplitude={0.4}
+                    frequencyX={2}
+                    frequencyY={2}
+                    interactive={true}
+                />
+            </div>
+            <div className="login-container">
+                <div className="login-box">
+                    <h1>Trivia Game</h1>
+                    <h2>{isRegister ? 'Register' : 'Login'}</h2>
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label>Username</label>
+                            <input
+                                type="text"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                required
+                                placeholder="Enter username"
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Password</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                placeholder="Enter password"
+                            />
+                        </div>
+
+                        {error && <div className="error-message">{error}</div>}
+
+                        <button type="submit" disabled={loading}>
+                            {loading ? 'Please wait...' : isRegister ? 'Register' : 'Login'}
+                        </button>
+                    </form>
+
+                    <div className="toggle-form">
+                        {isRegister ? (
+                            <p>
+                                Already have an account?{' '}
+                                <button type="button" onClick={() => { setIsRegister(false); setError(''); }}>
+                                    Login
+                                </button>
+                            </p>
+                        ) : (
+                            <p>
+                                Don't have an account?{' '}
+                                <button type="button" onClick={() => { setIsRegister(true); setError(''); }}>
+                                    Register
+                                </button>
+                            </p>
+                        )}
                     </div>
-
-                    <div className="form-group">
-                        <label>Password</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            placeholder="Enter password"
-                        />
-                    </div>
-
-                    {error && <div className="error-message">{error}</div>}
-
-                    <button type="submit" disabled={loading}>
-                        {loading ? 'Please wait...' : isRegister ? 'Register' : 'Login'}
-                    </button>
-                </form>
-
-                <div className="toggle-form">
-                    {isRegister ? (
-                        <p>
-                            Already have an account?{' '}
-                            <button type="button" onClick={() => { setIsRegister(false); setError(''); }}>
-                                Login
-                            </button>
-                        </p>
-                    ) : (
-                        <p>
-                            Don't have an account?{' '}
-                            <button type="button" onClick={() => { setIsRegister(true); setError(''); }}>
-                                Register
-                            </button>
-                        </p>
-                    )}
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

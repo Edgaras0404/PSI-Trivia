@@ -72,7 +72,7 @@
             <param name="questionService"></param>
             <param name="dbContext"></param>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Data.TriviaDbContext)">
+        <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Data.TriviaDbContext,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler})">
             <summary>
             Class for managing player activity and game progression in a match
             </summary>

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using TriviaBackend.Data;
+using TriviaBackend.Exceptions;
 using TriviaBackend.Models;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
@@ -15,7 +16,7 @@ namespace TriviaBackend.Hubs
     /// </summary>
     /// <param name="questionService"></param>
     /// <param name="dbContext"></param>
-    public class GameHub(QuestionService questionService, TriviaDbContext dbContext) : Hub
+    public class GameHub(QuestionService questionService, TriviaDbContext dbContext, ILogger<ExceptionHandler> logger) : Hub
     {
         private static readonly Dictionary<string, GameEngineService> _activeGames = new();
         private static readonly Dictionary<string, string> _playerGameMap = new();
@@ -39,9 +40,9 @@ namespace TriviaBackend.Hubs
         /// <returns></returns>
         public async Task CreateGame(string playerName, int maxPlayers = 10, int questionsPerGame = 10)
         {
-            Console.WriteLine("=== CreateGame called ===");
+            logger.LogInformation("=== CreateGame called ===");
             var gameId = Guid.NewGuid().ToString()[..6].ToUpper();
-            Console.WriteLine($"Generated gameId: {gameId}");
+            logger.LogInformation($"Generated gameId: {gameId}");
 
             var setting = new GameSettings
             {
@@ -137,20 +138,20 @@ namespace TriviaBackend.Hubs
         {
             try
             {
-                Console.WriteLine($"=== StartGame called with gameId: {gameId} ===");
+                logger.LogInformation($"=== StartGame called with gameId: {gameId} ===");
 
                 if (!_activeGames.ContainsKey(gameId))
                 {
-                    Console.WriteLine($"ERROR: Game {gameId} not found in _activeGames");
+                    logger.LogError($"ERROR: Game {gameId} not found in _activeGames");
                     await Clients.Caller.SendAsync("Error", "Game not found");
                     return;
                 }
 
                 var gameEngine = _activeGames[gameId];
-                Console.WriteLine($"Game found. Status: {gameEngine.Status}, Players: {gameEngine.GetPlayers().Count}");
+                logger.LogInformation($"Game found. Status: {gameEngine.Status}, Players: {gameEngine.GetPlayers().Count}");
 
                 var allCategories = _questionService.GetQuestionCountByCategory();
-                Console.WriteLine($"Total questions available: {allCategories.Values.Sum()}");
+                logger.LogInformation($"Total questions available: {allCategories.Values.Sum()}");
 
                 QuestionCategory[]? selectedCategories = null;
                 if (categories != null && categories.Length > 0)
@@ -160,11 +161,11 @@ namespace TriviaBackend.Hubs
                         .Where(c => c.HasValue)
                         .Select(c => c!.Value)
                         .ToArray();
-                    Console.WriteLine($"Selected categories: {string.Join(", ", selectedCategories)}");
+                    logger.LogInformation($"Selected categories: {string.Join(", ", selectedCategories)}");
                 }
                 else
                 {
-                    Console.WriteLine("No categories specified - using all categories");
+                    logger.LogInformation("No categories specified - using all categories");
                 }
 
                 DifficultyLevel? maxDifficulty = null;
@@ -172,26 +173,26 @@ namespace TriviaBackend.Hubs
                     Enum.TryParse<DifficultyLevel>(difficulty, true, out var diff))
                 {
                     maxDifficulty = diff;
-                    Console.WriteLine($"Max difficulty: {maxDifficulty}");
+                    logger.LogInformation($"Max difficulty: {maxDifficulty}");
                 }
 
-                Console.WriteLine("Calling gameEngine.StartGame...");
+                logger.LogInformation("Calling gameEngine.StartGame...");
                 if (gameEngine.StartGame(selectedCategories, maxDifficulty))
                 {
-                    Console.WriteLine("Game started successfully!");
+                    logger.LogInformation("Game started successfully!");
                     await Clients.Group(gameId).SendAsync("GameStarted");
                     await SendCurrentQuestion(gameId, gameEngine);
                 }
                 else
                 {
-                    Console.WriteLine("ERROR: gameEngine.StartGame returned false");
+                    logger.LogError("ERROR: gameEngine.StartGame returned false");
                     await Clients.Caller.SendAsync("Error", "Failed to start game");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"EXCEPTION in StartGame: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                logger.LogError($"EXCEPTION in StartGame: {ex.Message}");
+                logger.LogError($"Stack trace: {ex.StackTrace}");
                 await Clients.Caller.SendAsync("Error", $"Error: {ex.Message}");
                 throw;
             }
@@ -206,7 +207,7 @@ namespace TriviaBackend.Hubs
         /// <returns></returns>
         public async Task SubmitAnswer(string gameId, int playerId, int answerIndex)
         {
-            Console.WriteLine($"=== SubmitAnswer called: gameId={gameId}, playerId={playerId}, answer={answerIndex} ===");
+            logger.LogInformation($"=== SubmitAnswer called: gameId={gameId}, playerId={playerId}, answer={answerIndex} ===");
 
             if (!_activeGames.ContainsKey(gameId))
             {
@@ -219,13 +220,13 @@ namespace TriviaBackend.Hubs
             var questionKey = $"{gameId}_{gameEngine.CurrentQuestion?.Id}";
             if (_questionRevealed.ContainsKey(questionKey) && _questionRevealed[questionKey])
             {
-                Console.WriteLine($"Question already revealed for {questionKey}");
+                logger.LogInformation($"Question already revealed for {questionKey}");
                 await Clients.Caller.SendAsync("Error", "Question already completed");
                 return;
             }
 
             var result = gameEngine.SubmitAnswer(playerId, answerIndex);
-            Console.WriteLine($"Answer result: {result}");
+            logger.LogInformation($"Answer result: {result}");
 
             await Clients.Caller.SendAsync("AnswerResult", new
             {
@@ -235,7 +236,7 @@ namespace TriviaBackend.Hubs
 
             if (gameEngine.AllPlayersAnswered())
             {
-                Console.WriteLine($"All players answered for game {gameId}");
+                logger.LogInformation($"All players answered for game {gameId}");
 
                 if (_gameTimers.ContainsKey(gameId))
                 {
@@ -246,7 +247,7 @@ namespace TriviaBackend.Hubs
             }
             else
             {
-                Console.WriteLine($"Waiting for more players to answer in game {gameId}");
+                logger.LogInformation($"Waiting for more players to answer in game {gameId}");
             }
         }
 
@@ -279,7 +280,7 @@ namespace TriviaBackend.Hubs
             var question = gameEngine.CurrentQuestion;
             if (question == null)
             {
-                Console.WriteLine($"ERROR: No current question for game {gameId}");
+                logger.LogError($"ERROR: No current question for game {gameId}");
                 return;
             }
 
@@ -292,7 +293,7 @@ namespace TriviaBackend.Hubs
                 _gameTimers[gameId].Dispose();
             }
 
-            Console.WriteLine($"Sending question {gameEngine.CurrentQuestionNumber} (ID: {question.Id}) to game {gameId}, TimeLimit: {question.TimeLimit}s");
+            logger.LogInformation($"Sending question {gameEngine.CurrentQuestionNumber} (ID: {question.Id}) to game {gameId}, TimeLimit: {question.TimeLimit}s");
 
             await Clients.Group(gameId).SendAsync("NewQuestion", new
             {
@@ -312,27 +313,27 @@ namespace TriviaBackend.Hubs
             {
                 try
                 {
-                    Console.WriteLine($"[TIMER] Started for {question.TimeLimit} seconds for game {gameId}");
+                    logger.LogInformation($"[TIMER] Started for {question.TimeLimit} seconds for game {gameId}");
                     await Task.Delay(TimeSpan.FromSeconds(question.TimeLimit), cancelTokenSource.Token);
 
                     if (!cancelTokenSource.Token.IsCancellationRequested && _staticHubContext != null)
                     {
-                        Console.WriteLine($"[TIMER] Time's up for game {gameId}!");
+                        logger.LogInformation($"[TIMER] Time's up for game {gameId}!");
 
                         await _staticHubContext.Clients.Group(gameId).SendAsync("TimeUp");
-                        Console.WriteLine($"[TIMER] Sent TimeUp message to group {gameId}");
+                        logger.LogInformation($"[TIMER] Sent TimeUp message to group {gameId}");
 
                         await RevealAnswerAndProgress(gameId, 5000, gameEngine);
                     }
                 }
                 catch (TaskCanceledException)
                 {
-                    Console.WriteLine($"[TIMER] Cancelled for game {gameId} - all players answered early");
+                    logger.LogInformation($"[TIMER] Cancelled for game {gameId} - all players answered early");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[TIMER] ERROR in timer for game {gameId}: {ex.Message}");
-                    Console.WriteLine($"[TIMER] Stack trace: {ex.StackTrace}");
+                    logger.LogInformation($"[TIMER] ERROR in timer for game {gameId}: {ex.Message}");
+                    logger.LogInformation($"[TIMER] Stack trace: {ex.StackTrace}");
                 }
                 finally
                 {
@@ -354,30 +355,30 @@ namespace TriviaBackend.Hubs
         /// <returns></returns>
         private async Task RevealAnswerAndProgress(string gameId, int autoProgressMillisecodns, GameEngineService gameEngine)
         {
-            Console.WriteLine($"=== RevealAnswerAndProgress called for game {gameId} ===");
+            logger.LogInformation($"=== RevealAnswerAndProgress called for game {gameId} ===");
 
             if (_staticHubContext == null)
             {
-                Console.WriteLine("ERROR: Hub context is null!");
+                logger.LogError("ERROR: Hub context is null!");
                 return;
             }
 
             var question = gameEngine.CurrentQuestion;
             if (question == null)
             {
-                Console.WriteLine($"ERROR: No current question in RevealAnswerAndProgress for game {gameId}");
+                logger.LogError($"ERROR: No current question in RevealAnswerAndProgress for game {gameId}");
                 return;
             }
 
             var questionKey = $"{gameId}_{question.Id}";
             if (_questionRevealed.ContainsKey(questionKey) && _questionRevealed[questionKey])
             {
-                Console.WriteLine($"Question {question.Id} already revealed for game {gameId}, skipping");
+                logger.LogInformation($"Question {question.Id} already revealed for game {gameId}, skipping");
                 return;
             }
 
             _questionRevealed[questionKey] = true;
-            Console.WriteLine($"Revealing answer for question {question.Id} in game {gameId}");
+            logger.LogInformation($"Revealing answer for question {question.Id} in game {gameId}");
 
             var leaderboard = gameEngine.GetCurrentGameLeaderboard();
 
@@ -394,21 +395,21 @@ namespace TriviaBackend.Hubs
                 })
             });
 
-            Console.WriteLine($"Sent AnswerRevealed to game {gameId}");
+            logger.LogInformation($"Sent AnswerRevealed to game {gameId}");
 
-            Console.WriteLine($"Waiting {autoProgressMillisecodns} seconds before next question...");
+            logger.LogInformation($"Waiting {autoProgressMillisecodns} seconds before next question...");
             await Task.Delay(autoProgressMillisecodns);
 
-            Console.WriteLine($"Moving to next question for game {gameId}");
+            logger.LogInformation($"Moving to next question for game {gameId}");
 
             if (!gameEngine.NextQuestion())
             {
-                Console.WriteLine($"No more questions, ending game {gameId}");
+                logger.LogInformation($"No more questions, ending game {gameId}");
                 await EndGame(gameId, gameEngine);
             }
             else
             {
-                Console.WriteLine($"Loading next question for game {gameId}");
+                logger.LogInformation($"Loading next question for game {gameId}");
                 await SendCurrentQuestion(gameId, gameEngine);
             }
         }
@@ -421,11 +422,11 @@ namespace TriviaBackend.Hubs
         /// <returns></returns>
         private async Task EndGame(string gameId, GameEngineService gameEngine)
         {
-            Console.WriteLine($"=== Ending game {gameId} ===");
+            logger.LogInformation($"=== Ending game {gameId} ===");
 
             if (_staticHubContext == null)
             {
-                Console.WriteLine("ERROR: Hub context is null in EndGame!");
+                logger.LogError("ERROR: Hub context is null in EndGame!");
                 return;
             }
 
@@ -459,7 +460,7 @@ namespace TriviaBackend.Hubs
 
             _activeGames.Remove(gameId);
             _gamePlayerUsernames.Remove(gameId);
-            Console.WriteLine($"Game {gameId} ended and removed from active games");
+            logger.LogInformation($"Game {gameId} ended and removed from active games");
         }
 
         /// <summary>
@@ -472,58 +473,59 @@ namespace TriviaBackend.Hubs
         {
             try
             {
-                Console.WriteLine($"=== UpdatePlayerStats called for game {gameId} ===");
+                logger.LogInformation($"=== UpdatePlayerStats called for game {gameId} ===");
 
                 if (!_gamePlayerUsernames.ContainsKey(gameId))
                 {
-                    Console.WriteLine($"ERROR: No player usernames found for game {gameId}");
+                    logger.LogError($"ERROR: No player usernames found for game {gameId}");
                     return;
                 }
 
                 var playerUsernames = _gamePlayerUsernames[gameId];
-                Console.WriteLine($"Found {playerUsernames.Count} players in game");
+                logger.LogInformation($"Found {playerUsernames.Count} players in game");
 
                 foreach (var gamePlayer in finalLeaderboard)
                 {
-                    Console.WriteLine($"Processing player ID {gamePlayer.Id}...");
+                    logger.LogInformation($"Processing player ID {gamePlayer.Id}...");
 
                     if (!playerUsernames.ContainsKey(gamePlayer.Id))
                     {
-                        Console.WriteLine($"ERROR: No username found for player ID {gamePlayer.Id}");
+                        logger.LogError($"ERROR: No username found for player ID {gamePlayer.Id}");
                         continue;
                     }
 
                     var username = playerUsernames[gamePlayer.Id];
-                    Console.WriteLine($"Looking up username: {username}");
+                    logger.LogInformation($"Looking up username: {username}");
 
                     var player = await _dbContext.Users
                         .OfType<Player>()
                         .FirstOrDefaultAsync(p => p.Username == username);
 
-                    if (player != null)
+                    if (player == null)
                     {
-                        Console.WriteLine($"Found player in DB: {player.Username}, Current ELO: {player.Elo}, Current Points: {player.TotalPoints}, Current Games: {player.GamesPlayed}");
+                        logger.LogError($"Player {username} not found");
+                        throw new PlayerNotFoundException($"Player {username} not found");
+                    }
+                    else
+                    {
+                        logger.LogInformation($"Found player in DB: {player.Username}, Current ELO: {player.Elo}, Current Points: {player.TotalPoints}, Current Games: {player.GamesPlayed}");
 
                         var eloChange = CalculateEloChange(gamePlayer, finalLeaderboard);
                         player.Elo += eloChange;
                         player.GamesPlayed++;
                         player.TotalPoints += gamePlayer.CurrentGameScore;
 
-                        Console.WriteLine($"Updated {username}: +{eloChange} ELO, +{gamePlayer.CurrentGameScore} Points, New ELO: {player.Elo}, New Total Points: {player.TotalPoints}, New Games: {player.GamesPlayed}");
-                    }
-                    else
-                    {
-                        Console.WriteLine($"ERROR: Player '{username}' not found in database");
+                        logger.LogInformation($"Updated {username}: +{eloChange} ELO, +{gamePlayer.CurrentGameScore} Points, New ELO: {player.Elo}, New Total Points: {player.TotalPoints}, New Games: {player.GamesPlayed}");
                     }
                 }
 
                 var changes = await _dbContext.SaveChangesAsync();
-                Console.WriteLine($"Saved {changes} changes to database for game {gameId}");
+                logger.LogInformation($"Saved {changes} changes to database for game {gameId}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"ERROR updating player stats: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                logger.LogError($"ERROR updating player stats: {ex.Message}");
+                logger.LogError($"Stack trace: {ex.StackTrace}");
             }
         }
 

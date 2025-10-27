@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using System;
 using TriviaBackend.Data;
+using TriviaBackend.Exceptions;
 using TriviaBackend.Hubs;
 using TriviaBackend.Services;
 
@@ -12,6 +15,18 @@ namespace TriviaBackend
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            //log only message with time
+            builder.Host.UseSerilog((context, loggerConfig) =>
+                loggerConfig
+                .MinimumLevel.Error()
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss}] {Message:lj}{NewLine}")
+                .WriteTo.File(
+                    "logs/app.log",
+                    outputTemplate: "[{Timestamp:HH:mm:ss}] {Message:lj}{NewLine}",
+                    rollingInterval: RollingInterval.Day
+                )
+            );
 
             builder.Services.AddControllers();
             builder.Services.AddSignalR();
@@ -51,7 +66,6 @@ namespace TriviaBackend
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-
 
             app.UseHttpsRedirection(); // Enforce HTTPS redirection from HTTP (5000 to HTTPS 5001)
 

@@ -16,6 +16,7 @@ namespace TriviaBackend.Hubs
     /// </summary>
     /// <param name="questionService"></param>
     /// <param name="dbContext"></param>
+    /// <param name="logger"></param>
     public class GameHub(QuestionService questionService, TriviaDbContext dbContext, ILogger<ExceptionHandler> logger) : Hub
     {
         private static readonly Dictionary<string, GameEngineService> _activeGames = new();

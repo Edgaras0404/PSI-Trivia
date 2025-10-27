@@ -71,6 +71,7 @@
             </summary>
             <param name="questionService"></param>
             <param name="dbContext"></param>
+            <param name="logger"></param>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Data.TriviaDbContext,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler})">
             <summary>
@@ -78,6 +79,7 @@
             </summary>
             <param name="questionService"></param>
             <param name="dbContext"></param>
+            <param name="logger"></param>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.CreateGame(System.String,System.Int32,System.Int32)">
             <summary>

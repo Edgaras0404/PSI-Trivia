@@ -86,6 +86,7 @@ namespace TriviaBackend.Controllers
         public async Task<ActionResult<string>> Login(BaseUserDTO request)
         {
             var user = await _DBService.GetUserByUsernameAsync(request.Username);
+
             if (user == null)
             {
                 return BadRequest("User not found");

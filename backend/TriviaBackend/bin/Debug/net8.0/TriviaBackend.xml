@@ -277,7 +277,7 @@
             <paramref name="gameId"/>
             </summary>
         </member>
-        <member name="M:TriviaBackend.Services.GameEngineService.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Models.Entities.GameSettings,System.String)">
+        <member name="M:TriviaBackend.Services.GameEngineService.#ctor(TriviaBackend.Services.QuestionService,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler},TriviaBackend.Models.Entities.GameSettings,System.String)">
             <summary>
             Service for processing actions and events in a match. Works together with GameHub
             <paramref name="questionService"/>

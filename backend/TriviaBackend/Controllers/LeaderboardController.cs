@@ -9,7 +9,7 @@ namespace TriviaBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LeaderboardController(PlayerService _PlayerService, ILogger<ExceptionHandler> logger) : ControllerBase
+    public class LeaderboardController(PlayerService _PlayerService, ILogger<ExceptionHandler> _logger) : ControllerBase
     {
         /// <summary>
         /// Get global ranking of players by elo
@@ -50,7 +50,7 @@ namespace TriviaBackend.Controllers
 
             if (targetPlayer == null)
             {
-                logger.LogError("ERROR: Player not found");
+                _logger.LogError("ERROR: Player not found");
                 return NotFound("Player not found");
             }
 
@@ -82,14 +82,22 @@ namespace TriviaBackend.Controllers
 
             if (player == null)
             {
-                logger.LogError("ERROR: Player not found");
+                _logger.LogError("ERROR: Player not found");
                 return NotFound("Player not found");
             }
 
             player.Elo += statsUpdate.EloChange;
             player.GamesPlayed++;
 
-            await _PlayerService.UpdatePlayerAsync(player);
+            try
+            {
+                await _PlayerService.UpdatePlayerAsync(player);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"ERROR updating player statistics: {ex.Message}");
+                throw new UpdatePlayerStatsException("Error while updating player statistics");
+            }
 
             return Ok(new
             {

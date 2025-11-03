@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './Login.css';
 import LiquidChrome from './LiquidChrome';
+import TextPressure from './TextPressure';
 
 const Login = ({ onLoginSuccess }) => {
     const [isRegister, setIsRegister] = useState(false);
@@ -64,7 +65,20 @@ const Login = ({ onLoginSuccess }) => {
             </div>
             <div className="login-container">
                 <div className="login-box">
-                    <h1>Trivia Game</h1>
+                    <div style={{ position: 'relative', height: '90px', marginBottom: '5px' }}>
+                        <TextPressure
+                            text="TRIVIA GAME"
+                            flex={true}
+                            alpha={false}
+                            stroke={false}
+                            width={true}
+                            weight={true}
+                            italic={true}
+                            textColor="#1a202c"
+                            strokeColor="#667eea"
+                            minFontSize={32}
+                        />
+                    </div>
                     <h2>{isRegister ? 'Register' : 'Login'}</h2>
 
                     <form onSubmit={handleSubmit}>

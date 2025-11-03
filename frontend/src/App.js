@@ -3,6 +3,9 @@ import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut } from 'lucide-react';
 import Login from './Login';
 import './App.css';
 import LiquidChrome from './LiquidChrome';
+   import TextPressure from './TextPressure';
+
+
 
 class GameConnection {
     constructor() {
@@ -207,7 +210,7 @@ function TriviaGame({ username, onLogout }) {
                     <LiquidChrome
                         baseColor={[0.4, 0.5, 0.9]}
                         speed={0.5}
-                        amplitude={0.4}
+                        amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
                         interactive={true}
@@ -227,7 +230,7 @@ function TriviaGame({ username, onLogout }) {
                     <LiquidChrome
                         baseColor={[0.4, 0.5, 0.9]}
                         speed={0.5}
-                        amplitude={0.4}
+                        amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
                         interactive={true}
@@ -272,7 +275,7 @@ function TriviaGame({ username, onLogout }) {
                     <LiquidChrome
                         baseColor={[0.4, 0.5, 0.9]}
                         speed={0.5}
-                        amplitude={0.4}
+                        amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
                         interactive={true}
@@ -298,7 +301,20 @@ function TriviaGame({ username, onLogout }) {
                     <div className="card">
                         <div className="header">
                             <Trophy className="icon-large" />
-                            <h1>Trivia Game</h1>
+                            <div style={{ position: 'relative', height: '120px', marginBottom: '20px' }}>
+                                <TextPressure
+                                    text="PSI TRIVIA"
+                                    flex={true}
+                                    alpha={false}
+                                    stroke={false}
+                                    width={true}
+                                    weight={true}
+                                    italic={true}
+                                    textColor="#1a202c"
+                                    strokeColor="#667eea"
+                                    minFontSize={32}
+                                />
+                            </div>
                             <p>Test your knowledge with friends!</p>
                         </div>
 
@@ -343,7 +359,7 @@ function TriviaGame({ username, onLogout }) {
                     <LiquidChrome
                         baseColor={[0.4, 0.5, 0.9]}
                         speed={0.5}
-                        amplitude={0.4}
+                        amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
                         interactive={true}
@@ -388,7 +404,7 @@ function TriviaGame({ username, onLogout }) {
                     <LiquidChrome
                         baseColor={[0.4, 0.5, 0.9]}
                         speed={0.5}
-                        amplitude={0.4}
+                        amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
                         interactive={true}
@@ -474,7 +490,7 @@ function TriviaGame({ username, onLogout }) {
                     <LiquidChrome
                         baseColor={[0.4, 0.5, 0.9]}
                         speed={0.5}
-                        amplitude={0.4}
+                        amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
                         interactive={true}

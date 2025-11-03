@@ -2,6 +2,10 @@
 import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut } from 'lucide-react';
 import Login from './Login';
 import './App.css';
+import LiquidChrome from './LiquidChrome';
+   import TextPressure from './TextPressure';
+
+
 
 class GameConnection {
     constructor() {
@@ -201,253 +205,338 @@ function TriviaGame({ username, onLogout }) {
 
     if (!connected) {
         return (
-            <div className="container">
-                <div className="loading">Connecting to server...</div>
-            </div>
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
+                </div>
+                <div className="container">
+                    <div className="loading">Connecting to server...</div>
+                </div>
+            </>
         );
     }
 
     if (showGlobalLeaderboard) {
         return (
-            <div className="modal-overlay" onClick={() => setShowGlobalLeaderboard(false)}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    <div className="modal-header">
-                        <h2>Global Leaderboard</h2>
-                        <button onClick={() => setShowGlobalLeaderboard(false)} className="close-button">×</button>
-                    </div>
-                    <div className="modal-body">
-                        {globalLeaderboard.length === 0 ? (
-                            <p className="empty-leaderboard">No players yet. Be the first!</p>
-                        ) : (
-                            <div className="global-leaderboard">
-                                {globalLeaderboard.map((player, index) => (
-                                    <div key={index} className={`leaderboard-row ${player.username === username ? 'highlight' : ''}`}>
-                                        <div className="rank-badge">{player.rank}</div>
-                                        <div className="player-details">
-                                            <div className="player-username">{player.username}</div>
-                                            <div className="player-games">
-                                                {player.gamesPlayed} games • {player.totalPoints} total points
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
+                </div>
+                <div className="modal-overlay" onClick={() => setShowGlobalLeaderboard(false)}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Global Leaderboard</h2>
+                            <button onClick={() => setShowGlobalLeaderboard(false)} className="close-button">×</button>
+                        </div>
+                        <div className="modal-body">
+                            {globalLeaderboard.length === 0 ? (
+                                <p className="empty-leaderboard">No players yet. Be the first!</p>
+                            ) : (
+                                <div className="global-leaderboard">
+                                    {globalLeaderboard.map((player, index) => (
+                                        <div key={index} className={`leaderboard-row ${player.username === username ? 'highlight' : ''}`}>
+                                            <div className="rank-badge">{player.rank}</div>
+                                            <div className="player-details">
+                                                <div className="player-username">{player.username}</div>
+                                                <div className="player-games">
+                                                    {player.gamesPlayed} games • {player.totalPoints} total points
+                                                </div>
                                             </div>
+                                            <div className="player-elo">{player.elo} ELO</div>
                                         </div>
-                                        <div className="player-elo">{player.elo} ELO</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     if (gameState === 'menu') {
         return (
-            <div className="container">
-                <div className="user-header">
-                    <div className="user-info">
-                        <span>Playing as: <strong>{username}</strong></span>
-                    </div>
-                    <div className="header-buttons">
-                        <button onClick={fetchGlobalLeaderboard} className="leaderboard-button">
-                            <Trophy className="icon" />
-                            Leaderboard
-                        </button>
-                        <button onClick={onLogout} className="logout-button">
-                            <LogOut className="icon" />
-                            Logout
-                        </button>
-                    </div>
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
                 </div>
-
-                <div className="card">
-                    <div className="header">
-                        <Trophy className="icon-large" />
-                        <h1>Trivia Game</h1>
-                        <p>Test your knowledge with friends!</p>
-                    </div>
-
-                    <div className="button-group">
-                        <button
-                            onClick={createGame}
-                            className="button button-primary"
-                        >
-                            <Plus className="icon" />
-                            Create New Game
-                        </button>
-
-                        <div className="join-group">
-                            <input
-                                type="text"
-                                placeholder="Game Code"
-                                value={gameId}
-                                onChange={(e) => setGameId(e.target.value.toUpperCase())}
-                                className="input input-small"
-                                maxLength={6}
-                            />
-                            <button
-                                onClick={joinGame}
-                                disabled={!gameId.trim()}
-                                className="button button-secondary"
-                            >
-                                <LogIn className="icon" />
-                                Join
+                <div className="container">
+                    <div className="user-header">
+                        <div className="user-info">
+                            <span>Playing as: <strong>{username}</strong></span>
+                        </div>
+                        <div className="header-buttons">
+                            <button onClick={fetchGlobalLeaderboard} className="leaderboard-button">
+                                <Trophy className="icon" />
+                                Leaderboard
+                            </button>
+                            <button onClick={onLogout} className="logout-button">
+                                <LogOut className="icon" />
+                                Logout
                             </button>
                         </div>
                     </div>
+
+                    <div className="card">
+                        <div className="header">
+                            <Trophy className="icon-large" />
+                            <div style={{ position: 'relative', height: '120px', marginBottom: '20px' }}>
+                                <TextPressure
+                                    text="PSI TRIVIA"
+                                    flex={true}
+                                    alpha={false}
+                                    stroke={false}
+                                    width={true}
+                                    weight={true}
+                                    italic={true}
+                                    textColor="#1a202c"
+                                    strokeColor="#667eea"
+                                    minFontSize={32}
+                                />
+                            </div>
+                            <p>Test your knowledge with friends!</p>
+                        </div>
+
+                        <div className="button-group">
+                            <button
+                                onClick={createGame}
+                                className="button button-primary"
+                            >
+                                <Plus className="icon" />
+                                Create New Game
+                            </button>
+
+                            <div className="join-group">
+                                <input
+                                    type="text"
+                                    placeholder="Game Code"
+                                    value={gameId}
+                                    onChange={(e) => setGameId(e.target.value.toUpperCase())}
+                                    className="input input-small"
+                                    maxLength={6}
+                                />
+                                <button
+                                    onClick={joinGame}
+                                    disabled={!gameId.trim()}
+                                    className="button button-secondary"
+                                >
+                                    <LogIn className="icon" />
+                                    Join
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     if (gameState === 'lobby') {
         return (
-            <div className="container">
-                <div className="card">
-                    <div className="header">
-                        <h2>Game Lobby</h2>
-                        <div className="game-code">{gameId}</div>
-                    </div>
-
-                    <div className="section">
-                        <div className="section-header">
-                            <Users className="icon" />
-                            <h3>Players ({players.length}/5)</h3>
-                        </div>
-                        <div className="players-list">
-                            {players.map((player) => (
-                                <div key={player.id} className="player-item">
-                                    <span>{player.name}</span>
-                                    {player.id === playerId && <span className="badge">You</span>}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <button onClick={startGame} className="button button-success">
-                        <Play className="icon" />
-                        Start Game
-                    </button>
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
                 </div>
-            </div>
+                <div className="container">
+                    <div className="card">
+                        <div className="header">
+                            <h2>Game Lobby</h2>
+                            <div className="game-code">{gameId}</div>
+                        </div>
+
+                        <div className="section">
+                            <div className="section-header">
+                                <Users className="icon" />
+                                <h3>Players ({players.length}/5)</h3>
+                            </div>
+                            <div className="players-list">
+                                {players.map((player) => (
+                                    <div key={player.id} className="player-item">
+                                        <span>{player.name}</span>
+                                        {player.id === playerId && <span className="badge">You</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button onClick={startGame} className="button button-success">
+                            <Play className="icon" />
+                            Start Game
+                        </button>
+                    </div>
+                </div>
+            </>
         );
     }
 
     if (gameState === 'playing' && currentQuestion) {
         return (
-            <div className="container">
-                <div className="card">
-                    <div className="question-header">
-                        <div className="question-info">
-                            <span className="badge badge-purple">Question {currentQuestion.questionNumber}</span>
-                            <span className="badge badge-blue">{currentQuestion.category}</span>
-                            <span className={`badge badge-${currentQuestion.difficulty.toLowerCase()}`}>
-                                {currentQuestion.difficulty}
-                            </span>
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
+                </div>
+                <div className="container">
+                    <div className="card">
+                        <div className="question-header">
+                            <div className="question-info">
+                                <span className="badge badge-purple">Question {currentQuestion.questionNumber}</span>
+                                <span className="badge badge-blue">{currentQuestion.category}</span>
+                                <span className={`badge badge-${currentQuestion.difficulty.toLowerCase()}`}>
+                                    {currentQuestion.difficulty}
+                                </span>
+                            </div>
+                            <div className="timer">
+                                <Clock className="icon" />
+                                <span>{showAnswer ? 'Time\'s up!' : `${timeLeft}s`}</span>
+                            </div>
                         </div>
-                        <div className="timer">
-                            <Clock className="icon" />
-                            <span>{showAnswer ? 'Time\'s up!' : `${timeLeft}s`}</span>
-                        </div>
-                    </div>
 
-                    <h3 className="question-text">{currentQuestion.questionText}</h3>
+                        <h3 className="question-text">{currentQuestion.questionText}</h3>
 
-                    <div className="options">
-                        {currentQuestion.options.map((option, index) => {
-                            let className = 'option';
+                        <div className="options">
+                            {currentQuestion.options.map((option, index) => {
+                                let className = 'option';
 
-                            if (showAnswer) {
-                                if (index === currentQuestion.correctAnswer) {
-                                    className += ' option-selected';
-                                } else if (index === selectedAnswer) {
+                                if (showAnswer) {
+                                    if (index === currentQuestion.correctAnswer) {
+                                        className += ' option-selected';
+                                    } else if (index === selectedAnswer) {
+                                        className += ' option-selected';
+                                    }
+                                } else if (selectedAnswer === index) {
                                     className += ' option-selected';
                                 }
-                            } else if (selectedAnswer === index) {
-                                className += ' option-selected';
-                            }
 
-                            return (
-                                <button
-                                    key={index}
-                                    onClick={() => submitAnswer(index)}
-                                    disabled={selectedAnswer !== null || showAnswer}
-                                    className={className}
-                                >
-                                    {option}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {answerResult && (
-                        <div className={`result ${answerResult.isCorrect ? 'result-correct' : 'result-incorrect'}`}>
-                            {answerResult.isCorrect ? 'Correct!' : 'Incorrect!'}
+                                return (
+                                    <button
+                                        key={index}
+                                        onClick={() => submitAnswer(index)}
+                                        disabled={selectedAnswer !== null || showAnswer}
+                                        className={className}
+                                    >
+                                        {option}
+                                    </button>
+                                );
+                            })}
                         </div>
-                    )}
 
-                    {showAnswer && (
-                        <div className="answer-section">
-                            <div className="leaderboard">
-                                <h4>Leaderboard</h4>
-                                {leaderboard.slice(0, 3).map((player, index) => (
-                                    <div key={player.id} className="leaderboard-item">
-                                        <span>{index + 1}. {player.name}</span>
-                                        <span className="score">{player.score} pts</span>
-                                    </div>
-                                ))}
+                        {answerResult && (
+                            <div className={`result ${answerResult.isCorrect ? 'result-correct' : 'result-incorrect'}`}>
+                                {answerResult.isCorrect ? 'Correct!' : 'Incorrect!'}
                             </div>
-                            <button onClick={nextQuestion} className="button button-primary">
-                                Next Question
-                            </button>
-                        </div>
-                    )}
+                        )}
+
+                        {showAnswer && (
+                            <div className="answer-section">
+                                <div className="leaderboard">
+                                    <h4>Leaderboard</h4>
+                                    {leaderboard.slice(0, 3).map((player, index) => (
+                                        <div key={player.id} className="leaderboard-item">
+                                            <span>{index + 1}. {player.name}</span>
+                                            <span className="score">{player.score} pts</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button onClick={nextQuestion} className="button button-primary">
+                                    Next Question
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     if (gameState === 'results') {
         return (
-            <div className="container">
-                <div className="card">
-                    <div className="header">
-                        <Trophy className="icon-large" />
-                        <h2>Game Over!</h2>
-                    </div>
-
-                    <div className="results">
-                        {leaderboard.map((player, index) => {
-                            const medals = ['🥇', '🥈', '🥉'];
-                            return (
-                                <div key={player.id} className={`result-item rank-${index + 1}`}>
-                                    <div className="result-left">
-                                        {index < 3 && <span className="medal">{medals[index]}</span>}
-                                        <div>
-                                            <div className="player-name">{player.name}</div>
-                                            <div className="player-stats">{player.correctAnswers} correct answers</div>
-                                        </div>
-                                    </div>
-                                    <div className="final-score">{player.score}</div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <button
-                        onClick={() => {
-                            setGameState('menu');
-                            setGameId('');
-                            setPlayerId(null);
-                            setPlayers([]);
-                            setCurrentQuestion(null);
-                            setLeaderboard([]);
-                        }}
-                        className="button button-primary"
-                    >
-                        Back to Menu
-                    </button>
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
                 </div>
-            </div>
+                <div className="container">
+                    <div className="card">
+                        <div className="header">
+                            <Trophy className="icon-large" />
+                            <h2>Game Over!</h2>
+                        </div>
+
+                        <div className="results">
+                            {leaderboard.map((player, index) => {
+                                const medals = ['🥇', '🥈', '🥉'];
+                                return (
+                                    <div key={player.id} className={`result-item rank-${index + 1}`}>
+                                        <div className="result-left">
+                                            {index < 3 && <span className="medal">{medals[index]}</span>}
+                                            <div>
+                                                <div className="player-name">{player.name}</div>
+                                                <div className="player-stats">{player.correctAnswers} correct answers</div>
+                                            </div>
+                                        </div>
+                                        <div className="final-score">{player.score}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setGameState('menu');
+                                setGameId('');
+                                setPlayerId(null);
+                                setPlayers([]);
+                                setCurrentQuestion(null);
+                                setLeaderboard([]);
+                            }}
+                            className="button button-primary"
+                        >
+                            Back to Menu
+                        </button>
+                    </div>
+                </div>
+            </>
         );
     }
 

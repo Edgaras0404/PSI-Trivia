@@ -1,9 +1,10 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut } from 'lucide-react';
+import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut, User } from 'lucide-react';
 import Login from './Login';
 import './App.css';
 import LiquidChrome from './LiquidChrome';
-   import TextPressure from './TextPressure';
+import TextPressure from './TextPressure';
+import Profile from './Profile';
 
 
 
@@ -73,6 +74,7 @@ function TriviaGame({ username, onLogout }) {
     const [showAnswer, setShowAnswer] = useState(false);
     const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
     const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
+    const [showProfile, setShowProfile] = useState(false);
 
     useEffect(() => {
         const initConnection = async () => {
@@ -268,6 +270,10 @@ function TriviaGame({ username, onLogout }) {
         );
     }
 
+    if (showProfile) {
+        return <Profile username={username} onBack={() => setShowProfile(false)} />;
+    }
+
     if (gameState === 'menu') {
         return (
             <>
@@ -283,6 +289,25 @@ function TriviaGame({ username, onLogout }) {
                 </div>
                 <div className="container">
                     <div className="user-header">
+                        <button
+                            onClick={() => setShowProfile(true)}
+                            style={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                border: 'none',
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            <User style={{ width: '20px', height: '20px', color: 'white' }} />
+                        </button>
                         <div className="user-info">
                             <span>Playing as: <strong>{username}</strong></span>
                         </div>

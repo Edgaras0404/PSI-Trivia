@@ -429,7 +429,7 @@ function TriviaGame({ username, onLogout }) {
                         <h3 className="question-text">{currentQuestion.questionText}</h3>
 
                         <div className="options">
-                            {currentQuestion.options.map((option, index) => {
+                            {currentQuestion.answerOptions.map((option, index) => {
                                 let className = 'option';
 
                                 if (showAnswer) {

@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TriviaBackend.Exceptions;
+using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Records;
-using TriviaBackend.Models.Entities;
 
 namespace TriviaBackend.Services
 {
@@ -13,9 +14,10 @@ namespace TriviaBackend.Services
     /// <paramref name="settings"/>
     /// <paramref name="gameId"/>
     /// </summary>
-    public class GameEngineService(QuestionService questionService, GameSettings settings = default, string? gameId = null)
+    public class GameEngineService(QuestionService questionService, ILogger<ExceptionHandler> logger, GameSettings settings = default, string? gameId = null)
     {
         private readonly QuestionService _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
+        private ILogger<ExceptionHandler> _logger = logger;
         private List<GamePlayer> _players = new List<GamePlayer>();
         private Queue<TriviaQuestion> _gameQuestions = new Queue<TriviaQuestion>();
         private Dictionary<int, List<GameAnswer>> _gameAnswers = new Dictionary<int, List<GameAnswer>>();
@@ -82,9 +84,8 @@ namespace TriviaBackend.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GameEngine.StartGame: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                throw;
+                _logger.LogError($"ERROR starting game: {ex.Message}");
+                throw new StartGameException("Game could not be started");
             }
         }
 

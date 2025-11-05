@@ -29,6 +29,7 @@ namespace TriviaBackend.Models.Entities
         public int CorrectAnswerIndex { get; set; }
         public QuestionCategory Category { get; set; }
         public DifficultyLevel Difficulty { get; set; }
+
         public int TimeLimit { get; set; } = 30;
         public int Points => (int)Difficulty * 10;
 

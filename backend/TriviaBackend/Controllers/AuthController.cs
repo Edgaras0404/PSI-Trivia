@@ -46,7 +46,7 @@ namespace TriviaBackend.Controllers
             var hashedPassword = new PasswordHasher<Player>().HashPassword(user, request.Password);
             user.PasswordHash = hashedPassword;
 
-            _DBService.AddUserAsync(user).Wait();
+            await _DBService.AddUserAsync(user);
             return Ok(user);
         }
 
@@ -58,7 +58,7 @@ namespace TriviaBackend.Controllers
         [HttpPost("elevate-to-admin")]
         public async Task<ActionResult<BaseUser>> ElevatePriveleges(string Id)
         {
-            var user = _DBService.GetUserByIdAsync(Id).Result;
+            var user = await _DBService.GetUserByIdAsync(Id);
             if (user == null)
             {
                 return BadRequest("User not found");

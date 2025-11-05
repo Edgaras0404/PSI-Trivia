@@ -535,7 +535,7 @@ namespace TriviaBackend.Hubs
         /// </summary>
         /// <param name="player"></param>
         /// <param name="leaderboard"></param>
-        /// <seealso cref="https://en.wikipedia.org/wiki/Elo_rating_system"/>
+        /// <seealso href="https://en.wikipedia.org/wiki/Elo_rating_system"/>
         /// <returns></returns>
         private static int CalculateEloChange(GamePlayer player, List<GamePlayer> leaderboard)
         {

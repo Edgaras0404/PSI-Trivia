@@ -71,13 +71,15 @@
             </summary>
             <param name="questionService"></param>
             <param name="dbContext"></param>
+            <param name="logger"></param>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Data.TriviaDbContext)">
+        <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Data.TriviaDbContext,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler})">
             <summary>
             Class for managing player activity and game progression in a match
             </summary>
             <param name="questionService"></param>
             <param name="dbContext"></param>
+            <param name="logger"></param>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.CreateGame(System.String,System.Int32,System.Int32)">
             <summary>
@@ -275,7 +277,7 @@
             <paramref name="gameId"/>
             </summary>
         </member>
-        <member name="M:TriviaBackend.Services.GameEngineService.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Models.Entities.GameSettings,System.String)">
+        <member name="M:TriviaBackend.Services.GameEngineService.#ctor(TriviaBackend.Services.QuestionService,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler},TriviaBackend.Models.Entities.GameSettings,System.String)">
             <summary>
             Service for processing actions and events in a match. Works together with GameHub
             <paramref name="questionService"/>

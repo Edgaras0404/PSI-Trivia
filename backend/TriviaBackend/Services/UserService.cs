@@ -11,7 +11,7 @@ namespace TriviaBackend.Services
         public async Task<BaseUser?> GetUserByIdAsync(string id) =>
             await _context.Users.FindAsync(id);
         public async Task<BaseUser?> GetUserByUsernameAsync(string usn) =>
-            await _context.Users.FirstAsync(u => u.Username == usn);
+            await _context.Users.FirstOrDefaultAsync(u => u.Username == usn);
 
         public async Task AddUserAsync(BaseUser user)
         {
@@ -24,6 +24,5 @@ namespace TriviaBackend.Services
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
         }
-
     }
 }

@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Security.Claims;
-using System.Text;
-using TriviaBackend.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using TriviaBackend.Exceptions;
+using TriviaBackend.Models.Entities;
 using TriviaBackend.Services;
 
 namespace TriviaBackend.Controllers
@@ -85,10 +86,12 @@ namespace TriviaBackend.Controllers
         public async Task<ActionResult<string>> Login(BaseUserDTO request)
         {
             var user = await _DBService.GetUserByUsernameAsync(request.Username);
+
             if (user == null)
             {
                 return BadRequest("User not found");
             }
+
             if (new PasswordHasher<BaseUser>().VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
             {
                 return BadRequest("Incorrect credentials");

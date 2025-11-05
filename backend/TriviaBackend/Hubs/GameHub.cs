@@ -164,7 +164,6 @@ namespace TriviaBackend.Hubs
                 }
 
                 Console.WriteLine($"Game found. Status: {gameEngine.Status}, Players: {gameEngine.GetPlayers().Count}");
-                var gameEngine = _activeGames[gameId];
                 _logger.LogInformation($"Game found. Status: {gameEngine.Status}, Players: {gameEngine.GetPlayers().Count}");
 
                 var allCategories = _questionService.GetQuestionCountByCategory();
@@ -478,8 +477,6 @@ namespace TriviaBackend.Hubs
             _activeGames.TryRemove(gameId, out _);
             _gamePlayerUsernames.TryRemove(gameId, out _);
             Console.WriteLine($"Game {gameId} ended and removed from active games");
-            _activeGames.Remove(gameId);
-            _gamePlayerUsernames.Remove(gameId);
             _logger.LogInformation($"Game {gameId} ended and removed from active games");
         }
 
@@ -502,7 +499,7 @@ namespace TriviaBackend.Hubs
                 }
 
                 Console.WriteLine($"Found {playerUsernames.Count} players in game");
-                var playerUsernames = _gamePlayerUsernames[gameId];
+                
                 _logger.LogInformation($"Found {playerUsernames.Count} players in game");
 
                 foreach (var gamePlayer in finalLeaderboard)
@@ -516,7 +513,7 @@ namespace TriviaBackend.Hubs
                     }
 
                     Console.WriteLine($"Looking up username: {username}");
-                    var username = playerUsernames[gamePlayer.Id];
+                    
                     _logger.LogInformation($"Looking up username: {username}");
 
                     var player = await _dbContext.Users

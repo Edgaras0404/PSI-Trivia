@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TriviaBackend.Exceptions;
+using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Records;
-using TriviaBackend.Models.Entities;
 
 namespace TriviaBackend.Services
 {
@@ -13,9 +14,10 @@ namespace TriviaBackend.Services
     /// <paramref name="settings"/>
     /// <paramref name="gameId"/>
     /// </summary>
-    public class GameEngineService(QuestionService questionService, GameSettings settings = default, string? gameId = null)
+    public class GameEngineService(QuestionService questionService, ILogger<ExceptionHandler> logger, GameSettings settings = default, string? gameId = null)
     {
         private readonly QuestionService _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
+        private ILogger<ExceptionHandler> _logger = logger;
         private List<GamePlayer> _players = new List<GamePlayer>();
         private Queue<TriviaQuestion> _gameQuestions = new Queue<TriviaQuestion>();
         private Dictionary<int, List<GameAnswer>> _gameAnswers = new Dictionary<int, List<GameAnswer>>();
@@ -30,6 +32,8 @@ namespace TriviaBackend.Services
 
         public TimeSpan TimeRemaining => _currentQuestion != null ?
             TimeSpan.FromSeconds(_currentQuestion.TimeLimit) - (DateTime.Now - _questionStartTime) : TimeSpan.Zero;
+
+        public GameSettings GetSettings() => _settings;
 
         public bool AddPlayer(string playerName, int? playerId = null, DateTime? joinTime = null)
         {
@@ -61,11 +65,19 @@ namespace TriviaBackend.Services
 
             try
             {
-                var questions = _questionService.GetQuestions(categories, maxDifficulty, _settings.QuestionsPerGame);
+                var categoriesToUse = categories ?? _settings.QuestionCategories;
+                var difficultyToUse = maxDifficulty ?? _settings.MaxDifficulty;
+
+                var questions = _questionService.GetQuestions(categoriesToUse, difficultyToUse, _settings.QuestionsPerGame);
+
+                _logger.LogInformation($"Requested {_settings.QuestionsPerGame} questions, got {questions?.Count ?? 0} questions");
+                _logger.LogInformation($"Categories: {string.Join(", ", categoriesToUse.Select(c => c.ToString()))}");
+                _logger.LogInformation($"Max Difficulty: {difficultyToUse}");
 
                 if (questions == null || questions.Count == 0)
                 {
                     Console.WriteLine("No questions returned from QuestionService");
+                    _logger.LogError("No questions returned from QuestionService");
                     return false;
                 }
 
@@ -73,6 +85,7 @@ namespace TriviaBackend.Services
                 foreach (var question in questions)
                 {
                     _gameQuestions.Enqueue(question);
+                    _logger.LogInformation($"Enqueued question {question.Id}: {question.QuestionText} ({question.Category}, {question.Difficulty})");
                 }
 
                 Status = GameStatus.InProgress;
@@ -82,15 +95,15 @@ namespace TriviaBackend.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GameEngine.StartGame: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                throw;
+                _logger.LogError($"ERROR starting game: {ex.Message}");
+                throw new StartGameException("Game could not be started");
             }
         }
 
         public bool NextQuestion()
         {
-            if (DateTime.Now - _questionStartTime < TimeSpan.FromSeconds(5))
+            // Only enforce 5-second delay if we've already shown a question
+            if (CurrentQuestionNumber > 0 && DateTime.Now - _questionStartTime < TimeSpan.FromSeconds(5))
                 return true;
 
             if (_gameQuestions.Count == 0)

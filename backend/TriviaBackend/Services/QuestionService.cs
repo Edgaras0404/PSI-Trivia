@@ -1,13 +1,14 @@
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using TriviaBackend.Data;
+using TriviaBackend.Exceptions;
+using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Records;
-using TriviaBackend.Models.Entities;
-using TriviaBackend.Data;
-using Microsoft.AspNetCore.Mvc;
 
 namespace TriviaBackend.Services
 {
@@ -18,10 +19,12 @@ namespace TriviaBackend.Services
     {
         private readonly TriviaDbContext _dbContext;
         private List<TriviaQuestion> _questionBank;
+        private ILogger<ExceptionHandler> _logger;
 
-        public QuestionService(TriviaDbContext dbContext)
+        public QuestionService(TriviaDbContext dbContext, ILogger<ExceptionHandler> logger)
         {
             _dbContext = dbContext;
+            _logger = logger;
             _questionBank = new List<TriviaQuestion>();
             //LoadDefaultQuestions();
             LoadDBQuestions();
@@ -49,7 +52,7 @@ namespace TriviaBackend.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error loading questions from file: {ex.Message}");
+                _logger.LogError($"ERROR loading questions: {ex.Message}");
             }
             return false;
         }

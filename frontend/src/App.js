@@ -1,7 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut } from 'lucide-react';
+import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut, Settings, Filter } from 'lucide-react';
 import Login from './Login';
 import './App.css';
+import LiquidChrome from './LiquidChrome';
+import TextPressure from './TextPressure';
 
 class GameConnection {
     constructor() {
@@ -69,6 +71,22 @@ function TriviaGame({ username, onLogout }) {
     const [showAnswer, setShowAnswer] = useState(false);
     const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
     const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
+    const [isHost, setIsHost] = useState(false);
+
+    // Lobby settings state
+    const [gameSettings, setGameSettings] = useState({
+        maxPlayers: 10,
+        questionsPerGame: 10,
+        defaultTimeLimit: 30,
+        questionCategories: ['Science', 'History', 'Sports', 'Geography', 'Literature'],
+        maxDifficulty: 'Hard'
+    });
+    const [selectedCategories, setSelectedCategories] = useState(['Science', 'History', 'Sports', 'Geography', 'Literature']);
+    const [selectedDifficulty, setSelectedDifficulty] = useState('Hard');
+    const [maxPlayers, setMaxPlayers] = useState(10);
+    const [questionsPerGame, setQuestionsPerGame] = useState(10);
+    const [availableCategories] = useState(['Science', 'History', 'Sports', 'Geography', 'Literature']);
+    const [availableDifficulties] = useState(['Easy', 'Medium', 'Hard']);
 
     useEffect(() => {
         const initConnection = async () => {
@@ -82,28 +100,53 @@ function TriviaGame({ username, onLogout }) {
         if (!connected) return;
 
         const handleGameCreated = (data) => {
+            console.log('Game created:', data);
             setGameId(data.gameId);
             setPlayerId(data.playerId);
+            setIsHost(true);
             setGameState('lobby');
+            
+            // Set initial settings from server response
+            if (data.settings) {
+                setGameSettings(data.settings);
+                setMaxPlayers(data.settings.maxPlayers);
+                setQuestionsPerGame(data.settings.questionsPerGame);
+                setSelectedCategories(data.settings.questionCategories || availableCategories);
+                setSelectedDifficulty(data.settings.maxDifficulty || 'Hard');
+            }
         };
 
         const handleJoinedGame = (data) => {
+            console.log('Joined game:', data);
             setGameId(data.gameId);
             setPlayerId(data.playerId);
             setPlayers(data.players);
+            setIsHost(false);
             setGameState('lobby');
         };
 
         const handlePlayerJoined = (data) => {
+            console.log('Player joined:', data);
             setPlayers(data.players);
         };
 
+        const handleSettingsUpdated = (data) => {
+            console.log('Settings updated:', data);
+            setGameSettings(data.settings);
+            setMaxPlayers(data.settings.maxPlayers);
+            setQuestionsPerGame(data.settings.questionsPerGame);
+            setSelectedCategories(data.settings.questionCategories);
+            setSelectedDifficulty(data.settings.maxDifficulty);
+        };
+
         const handleGameStarted = () => {
+            console.log('Game started');
             setGameState('playing');
             setShowAnswer(false);
         };
 
-        const handleNewQuestion = (data) => {
+        const handleQuestionSent = (data) => {
+            console.log('Question sent:', data);
             setCurrentQuestion(data);
             setSelectedAnswer(null);
             setAnswerResult(null);
@@ -112,30 +155,35 @@ function TriviaGame({ username, onLogout }) {
         };
 
         const handleAnswerResult = (data) => {
+            console.log('Answer result:', data);
             setAnswerResult(data);
         };
 
-        const handleAnswerRevealed = (data) => {
+        const handleQuestionRevealed = (data) => {
+            console.log('Question revealed:', data);
             setShowAnswer(true);
             setLeaderboard(data.leaderboard);
         };
 
         const handleGameEnded = (data) => {
+            console.log('Game ended:', data);
             setLeaderboard(data.leaderboard);
             setGameState('results');
         };
 
         const handleError = (message) => {
+            console.error('Error:', message);
             alert(message);
         };
 
         connection.on('GameCreated', handleGameCreated);
         connection.on('JoinedGame', handleJoinedGame);
         connection.on('PlayerJoined', handlePlayerJoined);
+        connection.on('SettingsUpdated', handleSettingsUpdated);
         connection.on('GameStarted', handleGameStarted);
-        connection.on('NewQuestion', handleNewQuestion);
+        connection.on('QuestionSent', handleQuestionSent);
         connection.on('AnswerResult', handleAnswerResult);
-        connection.on('AnswerRevealed', handleAnswerRevealed);
+        connection.on('QuestionRevealed', handleQuestionRevealed);
         connection.on('GameEnded', handleGameEnded);
         connection.on('Error', handleError);
 
@@ -143,14 +191,15 @@ function TriviaGame({ username, onLogout }) {
             connection.off('GameCreated', handleGameCreated);
             connection.off('JoinedGame', handleJoinedGame);
             connection.off('PlayerJoined', handlePlayerJoined);
+            connection.off('SettingsUpdated', handleSettingsUpdated);
             connection.off('GameStarted', handleGameStarted);
-            connection.off('NewQuestion', handleNewQuestion);
+            connection.off('QuestionSent', handleQuestionSent);
             connection.off('AnswerResult', handleAnswerResult);
-            connection.off('AnswerRevealed', handleAnswerRevealed);
+            connection.off('QuestionRevealed', handleQuestionRevealed);
             connection.off('GameEnded', handleGameEnded);
             connection.off('Error', handleError);
         };
-    }, [connected, connection]);
+    }, [connected, connection, availableCategories]);
 
     useEffect(() => {
         if (timeLeft > 0 && currentQuestion && !showAnswer) {
@@ -160,7 +209,7 @@ function TriviaGame({ username, onLogout }) {
     }, [timeLeft, currentQuestion, showAnswer]);
 
     const createGame = async () => {
-        await connection.invoke('CreateGame', username, 5, 10);
+        await connection.invoke('CreateGame', username);
     };
 
     const joinGame = async () => {
@@ -168,9 +217,37 @@ function TriviaGame({ username, onLogout }) {
         await connection.invoke('JoinGame', gameId.toUpperCase(), username);
     };
 
+    const updateGameSettings = async () => {
+        try {
+            await connection.invoke(
+                'UpdateGameSettings',
+                gameId,
+                maxPlayers,
+                questionsPerGame,
+                selectedCategories,
+                selectedDifficulty
+            );
+            alert('Settings updated successfully!');
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            alert('Failed to update settings');
+        }
+    };
+
     const startGame = async () => {
         try {
-            await connection.invoke('StartGame', gameId, null, null);
+            // Update settings one last time before starting
+            await connection.invoke(
+                'UpdateGameSettings',
+                gameId,
+                maxPlayers,
+                questionsPerGame,
+                selectedCategories,
+                selectedDifficulty
+            );
+            
+            // Start the game
+            await connection.invoke('StartGame', gameId, selectedCategories, selectedDifficulty);
         } catch (error) {
             console.error('Error starting game:', error);
         }
@@ -180,10 +257,6 @@ function TriviaGame({ username, onLogout }) {
         if (selectedAnswer !== null) return;
         setSelectedAnswer(index);
         await connection.invoke('SubmitAnswer', gameId, playerId, index);
-    };
-
-    const nextQuestion = async () => {
-        await connection.invoke('NextQuestion', gameId);
     };
 
     const fetchGlobalLeaderboard = async () => {
@@ -199,255 +272,495 @@ function TriviaGame({ username, onLogout }) {
         }
     };
 
+    const handleCategoryToggle = (category) => {
+        setSelectedCategories(prev => {
+            if (prev.includes(category)) {
+                if (prev.length === 1) return prev; // Don't allow removing all categories
+                return prev.filter(c => c !== category);
+            } else {
+                return [...prev, category];
+            }
+        });
+    };
+
     if (!connected) {
         return (
-            <div className="container">
-                <div className="loading">Connecting to server...</div>
-            </div>
-        );
-    }
-
-    if (showGlobalLeaderboard) {
-        return (
-            <div className="modal-overlay" onClick={() => setShowGlobalLeaderboard(false)}>
-                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                    <div className="modal-header">
-                        <h2>Global Leaderboard</h2>
-                        <button onClick={() => setShowGlobalLeaderboard(false)} className="close-button">×</button>
-                    </div>
-                    <div className="modal-body">
-                        {globalLeaderboard.length === 0 ? (
-                            <p className="empty-leaderboard">No players yet. Be the first!</p>
-                        ) : (
-                            <div className="global-leaderboard">
-                                {globalLeaderboard.map((player, index) => (
-                                    <div key={index} className={`leaderboard-row ${player.username === username ? 'highlight' : ''}`}>
-                                        <div className="rank-badge">{player.rank}</div>
-                                        <div className="player-details">
-                                            <div className="player-username">{player.username}</div>
-                                            <div className="player-games">
-                                                {player.gamesPlayed} games • {player.totalPoints} total points
-                                            </div>
-                                        </div>
-                                        <div className="player-elo">{player.elo} ELO</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
                 </div>
-            </div>
+                <div className="container">
+                    <div className="loading">Connecting to game server...</div>
+                </div>
+            </>
         );
     }
 
     if (gameState === 'menu') {
         return (
-            <div className="container">
+            <>
                 <div className="user-header">
                     <div className="user-info">
-                        <span>Playing as: <strong>{username}</strong></span>
+                        Welcome, <strong>{username}</strong>
                     </div>
                     <div className="header-buttons">
-                        <button onClick={fetchGlobalLeaderboard} className="leaderboard-button">
+                        <button className="leaderboard-button" onClick={fetchGlobalLeaderboard}>
                             <Trophy className="icon" />
                             Leaderboard
                         </button>
-                        <button onClick={onLogout} className="logout-button">
+                        <button className="logout-button" onClick={onLogout}>
                             <LogOut className="icon" />
                             Logout
                         </button>
                     </div>
                 </div>
 
-                <div className="card">
-                    <div className="header">
-                        <Trophy className="icon-large" />
-                        <h1>Trivia Game</h1>
-                        <p>Test your knowledge with friends!</p>
+                {showGlobalLeaderboard && (
+                    <div className="modal-overlay" onClick={() => setShowGlobalLeaderboard(false)}>
+                        <div className="modal-content" onClick={e => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h2>Global Leaderboard</h2>
+                                <button className="close-button" onClick={() => setShowGlobalLeaderboard(false)}>×</button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="global-leaderboard">
+                                    {globalLeaderboard.length > 0 ? (
+                                        globalLeaderboard.map((player, index) => (
+                                            <div
+                                                key={player.username}
+                                                className={`leaderboard-row ${player.username === username ? 'highlight' : ''}`}
+                                            >
+                                                <div className="rank-badge">{index + 1}</div>
+                                                <div className="player-details">
+                                                    <div className="player-username">{player.username}</div>
+                                                    <div className="player-games">{player.gamesPlayed} games played</div>
+                                                </div>
+                                                <div className="player-elo">{player.elo}</div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="empty-leaderboard">No players on the leaderboard yet</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                )}
 
-                    <div className="button-group">
-                        <button
-                            onClick={createGame}
-                            className="button button-primary"
-                        >
-                            <Plus className="icon" />
-                            Create New Game
-                        </button>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
+                </div>
+                <div className="container">
+                    <div className="card">
+                        <div className="header">
+                            <div style={{ position: 'relative', height: '80px', marginBottom: '15px' }}>
+                                <TextPressure
+                                    text="TRIVIA GAME"
+                                    flex={true}
+                                    alpha={false}
+                                    stroke={false}
+                                    width={true}
+                                    weight={true}
+                                    italic={true}
+                                    textColor="#1a202c"
+                                    strokeColor="#667eea"
+                                    minFontSize={32}
+                                />
+                            </div>
+                            <p>Test your knowledge and compete with friends!</p>
+                        </div>
 
-                        <div className="join-group">
-                            <input
-                                type="text"
-                                placeholder="Game Code"
-                                value={gameId}
-                                onChange={(e) => setGameId(e.target.value.toUpperCase())}
-                                className="input input-small"
-                                maxLength={6}
-                            />
-                            <button
-                                onClick={joinGame}
-                                disabled={!gameId.trim()}
-                                className="button button-secondary"
-                            >
-                                <LogIn className="icon" />
-                                Join
+                        <div className="button-group">
+                            <button onClick={createGame} className="button button-primary">
+                                <Plus className="icon" />
+                                Create New Game
                             </button>
+
+                            <div className="join-group">
+                                <input
+                                    type="text"
+                                    placeholder="GAME CODE"
+                                    value={gameId}
+                                    onChange={(e) => setGameId(e.target.value.toUpperCase())}
+                                    className="input-small"
+                                    maxLength={6}
+                                />
+                                <button onClick={joinGame} className="button button-secondary">
+                                    <LogIn className="icon" />
+                                    Join
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     if (gameState === 'lobby') {
         return (
-            <div className="container">
-                <div className="card">
-                    <div className="header">
-                        <h2>Game Lobby</h2>
-                        <div className="game-code">{gameId}</div>
+            <>
+                <div className="user-header">
+                    <div className="user-info">
+                        Welcome, <strong>{username}</strong>
                     </div>
-
-                    <div className="section">
-                        <div className="section-header">
-                            <Users className="icon" />
-                            <h3>Players ({players.length}/5)</h3>
-                        </div>
-                        <div className="players-list">
-                            {players.map((player) => (
-                                <div key={player.id} className="player-item">
-                                    <span>{player.name}</span>
-                                    {player.id === playerId && <span className="badge">You</span>}
-                                </div>
-                            ))}
-                        </div>
+                    <div className="header-buttons">
+                        <button className="logout-button" onClick={onLogout}>
+                            <LogOut className="icon" />
+                            Logout
+                        </button>
                     </div>
-
-                    <button onClick={startGame} className="button button-success">
-                        <Play className="icon" />
-                        Start Game
-                    </button>
                 </div>
-            </div>
+
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
+                </div>
+                <div className="container" style={{ paddingTop: '100px' }}>
+                    <div className="card" style={{ maxWidth: '900px' }}>
+                        <div className="header">
+                            <h1>Game Lobby</h1>
+                            <p>Game Code: <span className="game-code">{gameId}</span></p>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: isHost ? '1fr 2fr' : '1fr', gap: '30px' }}>
+                            {/* Players List */}
+                            <div className="section">
+                                <div className="section-header">
+                                    <Users className="icon" />
+                                    <h3>Players ({players.length}/{gameSettings.maxPlayers})</h3>
+                                </div>
+                                <div className="players-list">
+                                    {players.map((player) => (
+                                        <div key={player.id} className="player-item">
+                                            <span>{player.name}</span>
+                                            {player.id === playerId && <span className="badge">You</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Settings Panel (Host Only) */}
+                            {isHost && (
+                                <div className="section">
+                                    <div className="section-header">
+                                        <Settings className="icon" />
+                                        <h3>Game Settings</h3>
+                                    </div>
+                                    <div style={{ background: '#dbeafe', padding: '12px', borderRadius: '6px', marginBottom: '15px', fontSize: '0.875rem', color: '#1e40af' }}>
+                                        <strong>You are the host!</strong> Configure the game settings below and click "Start Game" when ready.
+                                    </div>
+
+                                    {/* Max Players */}
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+                                            Maximum Players (1-20):
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="20"
+                                            value={maxPlayers}
+                                            onChange={(e) => setMaxPlayers(parseInt(e.target.value) || 1)}
+                                            className="input"
+                                        />
+                                    </div>
+
+                                    {/* Questions Per Game */}
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+                                            Questions Per Game (5-50):
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="5"
+                                            max="50"
+                                            value={questionsPerGame}
+                                            onChange={(e) => setQuestionsPerGame(parseInt(e.target.value) || 5)}
+                                            className="input"
+                                        />
+                                    </div>
+
+                                    {/* Difficulty */}
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+                                            Maximum Difficulty:
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                            {availableDifficulties.map((difficulty) => (
+                                                <button
+                                                    key={difficulty}
+                                                    onClick={() => setSelectedDifficulty(difficulty)}
+                                                    className={`button ${selectedDifficulty === difficulty ? 'button-primary' : 'button-secondary'}`}
+                                                    style={{ flex: '1', minWidth: '80px' }}
+                                                >
+                                                    {difficulty}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Categories */}
+                                    <div className="form-group">
+                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+                                            <Filter className="icon" style={{ display: 'inline', marginRight: '5px' }} />
+                                            Question Categories:
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                            <button
+                                                onClick={() => setSelectedCategories([...availableCategories])}
+                                                className="button button-secondary"
+                                                style={{ flex: '1', fontSize: '0.875rem', padding: '8px 12px' }}
+                                            >
+                                                Select All
+                                            </button>
+                                            <button
+                                                onClick={() => setSelectedCategories([])}
+                                                className="button button-secondary"
+                                                style={{ flex: '1', fontSize: '0.875rem', padding: '8px 12px' }}
+                                            >
+                                                Deselect All
+                                            </button>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                            {availableCategories.map((category) => (
+                                                <button
+                                                    key={category}
+                                                    onClick={() => handleCategoryToggle(category)}
+                                                    className={`button ${selectedCategories.includes(category) ? 'button-primary' : 'button-secondary'}`}
+                                                    style={{ flex: '1 1 calc(50% - 10px)', minWidth: '120px' }}
+                                                >
+                                                    {category}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <small style={{ display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '0.875rem' }}>
+                                            Selected: {selectedCategories.length} / {availableCategories.length}
+                                        </small>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                                        <button
+                                            onClick={updateGameSettings}
+                                            disabled={selectedCategories.length === 0}
+                                            className="button button-secondary"
+                                            style={{ flex: '1' }}
+                                        >
+                                            <Settings className="icon" />
+                                            Save Settings
+                                        </button>
+                                        <button
+                                            onClick={startGame}
+                                            disabled={players.length < 1 || selectedCategories.length === 0}
+                                            className="button button-success"
+                                            style={{ flex: '1' }}
+                                        >
+                                            <Play className="icon" />
+                                            Start Game
+                                        </button>
+                                    </div>
+                                    {players.length < 1 && (
+                                        <small style={{ display: 'block', marginTop: '10px', color: '#dc2626', textAlign: 'center', fontWeight: '500' }}>
+                                            ⚠️ Need at least 1 player in the lobby to start
+                                        </small>
+                                    )}
+                                    {selectedCategories.length === 0 && (
+                                        <small style={{ display: 'block', marginTop: '10px', color: '#dc2626', textAlign: 'center', fontWeight: '500' }}>
+                                            ⚠️ Please select at least one category!
+                                        </small>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Waiting Message (Non-Host) */}
+                            {!isHost && (
+                                <div className="section" style={{ textAlign: 'center' }}>
+                                    <h3 style={{ color: '#1a202c', marginBottom: '20px' }}>Waiting for host to start the game...</h3>
+                                    <div style={{ background: '#f7fafc', padding: '20px', borderRadius: '8px' }}>
+                                        <h4 style={{ marginBottom: '15px', color: '#667eea' }}>Current Settings:</h4>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+                                            <div style={{ padding: '8px', background: 'white', borderRadius: '6px' }}>
+                                                <strong>Max Players:</strong> {maxPlayers}
+                                            </div>
+                                            <div style={{ padding: '8px', background: 'white', borderRadius: '6px' }}>
+                                                <strong>Questions:</strong> {questionsPerGame}
+                                            </div>
+                                            <div style={{ padding: '8px', background: 'white', borderRadius: '6px' }}>
+                                                <strong>Difficulty:</strong> {selectedDifficulty}
+                                            </div>
+                                            <div style={{ padding: '8px', background: 'white', borderRadius: '6px' }}>
+                                                <strong>Categories:</strong> {selectedCategories.join(', ')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </>
         );
     }
 
     if (gameState === 'playing' && currentQuestion) {
         return (
-            <div className="container">
-                <div className="card">
-                    <div className="question-header">
-                        <div className="question-info">
-                            <span className="badge badge-purple">Question {currentQuestion.questionNumber}</span>
-                            <span className="badge badge-blue">{currentQuestion.category}</span>
-                            <span className={`badge badge-${currentQuestion.difficulty.toLowerCase()}`}>
-                                {currentQuestion.difficulty}
-                            </span>
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
+                </div>
+                <div className="container">
+                    <div className="card">
+                        <div className="question-header">
+                            <div className="question-info">
+                                <span className="badge badge-purple">Question {currentQuestion.questionNumber}</span>
+                                <span className="badge badge-blue">{currentQuestion.category}</span>
+                                <span className={`badge badge-${currentQuestion.difficulty.toLowerCase()}`}>
+                                    {currentQuestion.difficulty}
+                                </span>
+                            </div>
+                            <div className="timer">
+                                <Clock className="icon" />
+                                <span>{showAnswer ? 'Time\'s up!' : `${timeLeft}s`}</span>
+                            </div>
                         </div>
-                        <div className="timer">
-                            <Clock className="icon" />
-                            <span>{showAnswer ? 'Time\'s up!' : `${timeLeft}s`}</span>
-                        </div>
-                    </div>
 
-                    <h3 className="question-text">{currentQuestion.questionText}</h3>
+                        <h3 className="question-text">{currentQuestion.questionText}</h3>
 
-                    <div className="options">
-                        {currentQuestion.options.map((option, index) => {
-                            let className = 'option';
+                        <div className="options">
+                            {currentQuestion.answerOptions.map((option, index) => {
+                                let className = 'option';
 
-                            if (showAnswer) {
-                                if (index === currentQuestion.correctAnswer) {
-                                    className += ' option-selected';
-                                } else if (index === selectedAnswer) {
+                                if (showAnswer) {
+                                    if (index === answerResult?.correctAnswer) {
+                                        className += ' option-correct';
+                                    } else if (index === selectedAnswer) {
+                                        className += ' option-incorrect';
+                                    }
+                                } else if (selectedAnswer === index) {
                                     className += ' option-selected';
                                 }
-                            } else if (selectedAnswer === index) {
-                                className += ' option-selected';
-                            }
 
-                            return (
-                                <button
-                                    key={index}
-                                    onClick={() => submitAnswer(index)}
-                                    disabled={selectedAnswer !== null || showAnswer}
-                                    className={className}
-                                >
-                                    {option}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {answerResult && (
-                        <div className={`result ${answerResult.isCorrect ? 'result-correct' : 'result-incorrect'}`}>
-                            {answerResult.isCorrect ? 'Correct!' : 'Incorrect!'}
+                                return (
+                                    <button
+                                        key={index}
+                                        onClick={() => submitAnswer(index)}
+                                        disabled={selectedAnswer !== null || showAnswer}
+                                        className={className}
+                                    >
+                                        {option}
+                                    </button>
+                                );
+                            })}
                         </div>
-                    )}
 
-                    {showAnswer && (
-                        <div className="answer-section">
-                            <div className="leaderboard">
-                                <h4>Leaderboard</h4>
-                                {leaderboard.slice(0, 3).map((player, index) => (
-                                    <div key={player.id} className="leaderboard-item">
-                                        <span>{index + 1}. {player.name}</span>
-                                        <span className="score">{player.score} pts</span>
-                                    </div>
-                                ))}
+                        {answerResult && (
+                            <div className={`result ${answerResult.result === 'Correct' ? 'result-correct' : 'result-incorrect'}`}>
+                                {answerResult.result === 'Correct' ? `Correct! +${answerResult.earnedPoints} points` : 'Incorrect!'}
                             </div>
-                            <button onClick={nextQuestion} className="button button-primary">
-                                Next Question
-                            </button>
-                        </div>
-                    )}
+                        )}
+
+                        {showAnswer && (
+                            <div className="answer-section">
+                                <div className="leaderboard">
+                                    <h4>Leaderboard</h4>
+                                    {leaderboard.slice(0, 5).map((player, index) => (
+                                        <div key={player.id} className="leaderboard-item">
+                                            <span>{index + 1}. {player.name}</span>
+                                            <span className="score">{player.score} pts</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </>
         );
     }
 
     if (gameState === 'results') {
         return (
-            <div className="container">
-                <div className="card">
-                    <div className="header">
-                        <Trophy className="icon-large" />
-                        <h2>Game Over!</h2>
-                    </div>
-
-                    <div className="results">
-                        {leaderboard.map((player, index) => {
-                            const medals = ['🥇', '🥈', '🥉'];
-                            return (
-                                <div key={player.id} className={`result-item rank-${index + 1}`}>
-                                    <div className="result-left">
-                                        {index < 3 && <span className="medal">{medals[index]}</span>}
-                                        <div>
-                                            <div className="player-name">{player.name}</div>
-                                            <div className="player-stats">{player.correctAnswers} correct answers</div>
-                                        </div>
-                                    </div>
-                                    <div className="final-score">{player.score}</div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
-                    <button
-                        onClick={() => {
-                            setGameState('menu');
-                            setGameId('');
-                            setPlayerId(null);
-                            setPlayers([]);
-                            setCurrentQuestion(null);
-                            setLeaderboard([]);
-                        }}
-                        className="button button-primary"
-                    >
-                        Back to Menu
-                    </button>
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
                 </div>
-            </div>
+                <div className="container">
+                    <div className="card">
+                        <div className="header">
+                            <Trophy className="icon-large" />
+                            <h2>Game Over!</h2>
+                        </div>
+
+                        <div className="results">
+                            {leaderboard.map((player, index) => {
+                                const medals = ['🥇', '🥈', '🥉'];
+                                return (
+                                    <div key={player.id} className={`result-item ${index < 3 ? `rank-${index + 1}` : ''}`}>
+                                        <div className="result-left">
+                                            {index < 3 && <span className="medal">{medals[index]}</span>}
+                                            <div>
+                                                <div className="player-name">{player.name}</div>
+                                                <div className="player-stats">{player.correctAnswers} correct answers</div>
+                                            </div>
+                                        </div>
+                                        <div className="final-score">{player.score}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setGameState('menu');
+                                setGameId('');
+                                setPlayerId(null);
+                                setPlayers([]);
+                                setCurrentQuestion(null);
+                                setLeaderboard([]);
+                                setIsHost(false);
+                            }}
+                            className="button button-primary"
+                        >
+                            Back to Menu
+                        </button>
+                    </div>
+                </div>
+            </>
         );
     }
 

@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut, Settings, Filter } from 'lucide-react';
+﻿import React, { useState, useEffect, Link } from 'react';
+import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut, Settings, Filter, Notebook } from 'lucide-react';
 import Login from './Login';
+import Editor from './Editor';
 import './App.css';
 import LiquidChrome from './LiquidChrome';
 import TextPressure from './TextPressure';
@@ -56,7 +57,7 @@ class GameConnection {
     }
 }
 
-function TriviaGame({ username, onLogout }) {
+function TriviaGame({ username, onLogout, onEditor }) {
     const [connection] = useState(() => new GameConnection());
     const [connected, setConnected] = useState(false);
     const [gameState, setGameState] = useState('menu');
@@ -105,7 +106,7 @@ function TriviaGame({ username, onLogout }) {
             setPlayerId(data.playerId);
             setIsHost(true);
             setGameState('lobby');
-            
+
             // Set initial settings from server response
             if (data.settings) {
                 setGameSettings(data.settings);
@@ -245,7 +246,7 @@ function TriviaGame({ username, onLogout }) {
                 selectedCategories,
                 selectedDifficulty
             );
-            
+
             // Start the game
             await connection.invoke('StartGame', gameId, selectedCategories, selectedDifficulty);
         } catch (error) {
@@ -311,11 +312,15 @@ function TriviaGame({ username, onLogout }) {
                         Welcome, <strong>{username}</strong>
                     </div>
                     <div className="header-buttons">
-                        <button className="leaderboard-button" onClick={fetchGlobalLeaderboard}>
+                        <button className="navbar-button editor-button" onClick={onEditor}>
+                            <Notebook className="icon" />
+                            Editor
+                        </button>
+                        <button className="navbar-button leaderboard-button" onClick={fetchGlobalLeaderboard}>
                             <Trophy className="icon" />
                             Leaderboard
                         </button>
-                        <button className="logout-button" onClick={onLogout}>
+                        <button className="navbar-button logout-button" onClick={onLogout}>
                             <LogOut className="icon" />
                             Logout
                         </button>
@@ -419,7 +424,7 @@ function TriviaGame({ username, onLogout }) {
                         Welcome, <strong>{username}</strong>
                     </div>
                     <div className="header-buttons">
-                        <button className="logout-button" onClick={onLogout}>
+                        <button className="navbar-button logout-button" onClick={onLogout}>
                             <LogOut className="icon" />
                             Logout
                         </button>
@@ -770,6 +775,7 @@ function TriviaGame({ username, onLogout }) {
 export default function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [username, setUsername] = useState('');
+    const [inEditor, setInEditor] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -785,6 +791,14 @@ export default function App() {
         setUsername(user);
     };
 
+    const enterEditor = () => {
+        setInEditor(true);
+    }
+
+    if (inEditor) {
+        return <Editor />;
+    }
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
@@ -796,5 +810,5 @@ export default function App() {
         return <Login onLoginSuccess={handleLoginSuccess} />;
     }
 
-    return <TriviaGame username={username} onLogout={handleLogout} />;
+    return <TriviaGame username={username} onLogout={handleLogout} onEditor={enterEditor} />;
 }

@@ -96,7 +96,7 @@ namespace TriviaBackend.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"ERROR updating player statistics: {ex.Message}");
-                throw new UpdatePlayerStatsException("Error while updating player statistics");
+                throw new PlayerStatsUpdateException("Error while updating player statistics");
             }
 
             return Ok(new

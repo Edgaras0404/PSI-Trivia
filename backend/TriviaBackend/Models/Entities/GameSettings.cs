@@ -9,5 +9,6 @@ namespace TriviaBackend.Models.Entities
         public int DefaultTimeLimit { get; set; } = DefaultTimeLimit;
         public bool AllowLateJoining { get; set; } = false;
         public QuestionCategory[] QuestionCategories { get; set; } = Enum.GetValues<QuestionCategory>();
+        public DifficultyLevel MaxDifficulty { get; set; } = DifficultyLevel.Hard;
     }
 }

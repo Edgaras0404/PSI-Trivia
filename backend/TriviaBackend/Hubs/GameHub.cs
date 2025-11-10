@@ -41,13 +41,11 @@ namespace TriviaBackend.Hubs
         }
 
         /// <summary>
-        /// Create a new game with random Id
+        /// Create a new game with random Id and initialize in lobby state
         /// </summary>
         /// <param name="playerName"></param>
-        /// <param name="maxPlayers"></param>
-        /// <param name="questionsPerGame"></param>
         /// <returns></returns>
-        public async Task CreateGame(string playerName, int maxPlayers = 10, int questionsPerGame = 10)
+        public async Task CreateGame(string playerName)
         {
             _logger.LogInformation("=== CreateGame called ===");
             var gameId = Guid.NewGuid().ToString()[..6].ToUpper();
@@ -55,13 +53,14 @@ namespace TriviaBackend.Hubs
 
             var setting = new GameSettings
             {
-                MaxPlayers = maxPlayers,
-                QuestionsPerGame = questionsPerGame,
-                DefaultTimeLimit = 30
+                MaxPlayers = 10,
+                QuestionsPerGame = 10,
+                DefaultTimeLimit = 30,
+                QuestionCategories = Enum.GetValues<QuestionCategory>(),
+                MaxDifficulty = DifficultyLevel.Hard
             };
 
             var gameEngine = new GameEngineService(_questionService, _logger, setting, gameId);
-            var playerId = await JoinGameInternal(gameId, playerName, gameEngine);
 
             if (!_activeGames.TryAdd(gameId, gameEngine))
             {
@@ -71,11 +70,18 @@ namespace TriviaBackend.Hubs
 
             _gamePlayerUsernames.TryAdd(gameId, new ConcurrentDictionary<int, string>());
 
+            // Add the creator as a player using a modified join method that doesn't send JoinedGame
+            var playerId = await JoinGameInternalForCreator(gameId, playerName, gameEngine);
+
             if (_gamePlayerUsernames.TryGetValue(gameId, out var playerDict))
             {
                 playerDict.TryAdd(playerId, playerName);
             }
 
+            var allCategories = Enum.GetValues<QuestionCategory>().Select(c => c.ToString()).ToArray();
+            var allDifficulties = Enum.GetValues<DifficultyLevel>().Select(d => d.ToString()).ToArray();
+
+            // Send GameCreated as the final event so isHost stays true
             await Clients.Caller.SendAsync("GameCreated", new
             {
                 gameId,
@@ -85,7 +91,93 @@ namespace TriviaBackend.Hubs
                 {
                     maxPlayers = setting.MaxPlayers,
                     questionsPerGame = setting.QuestionsPerGame,
-                    defaultTimeLimit = setting.DefaultTimeLimit
+                    defaultTimeLimit = setting.DefaultTimeLimit,
+                    questionCategories = setting.QuestionCategories.Select(c => c.ToString()).ToArray(),
+                    maxDifficulty = setting.MaxDifficulty.ToString()
+                },
+                availableCategories = allCategories,
+                availableDifficulties = allDifficulties
+            });
+        }
+
+        /// <summary>
+        /// Update game settings in the lobby before starting the game
+        /// </summary>
+        /// <param name="gameId"></param>
+        /// <param name="maxPlayers"></param>
+        /// <param name="questionsPerGame"></param>
+        /// <param name="categories"></param>
+        /// <param name="maxDifficulty"></param>
+        /// <returns></returns>
+        public async Task UpdateGameSettings(string gameId, int? maxPlayers = null, int? questionsPerGame = null,
+            string[]? categories = null, string? maxDifficulty = null)
+        {
+            if (!_activeGames.TryGetValue(gameId, out var gameEngine))
+            {
+                await Clients.Caller.SendAsync("Error", "Game not found");
+                return;
+            }
+
+            if (gameEngine.Status != GameStatus.Waiting)
+            {
+                await Clients.Caller.SendAsync("Error", "Cannot update settings after game has started");
+                return;
+            }
+
+            var existingSettings = gameEngine.GetSettings();
+            var currentPlayers = gameEngine.GetPlayers();
+
+            var currentSettings = new GameSettings
+            {
+                MaxPlayers = maxPlayers ?? existingSettings.MaxPlayers,
+                QuestionsPerGame = questionsPerGame ?? existingSettings.QuestionsPerGame,
+                DefaultTimeLimit = existingSettings.DefaultTimeLimit
+            };
+
+            if (categories != null && categories.Length > 0)
+            {
+                currentSettings.QuestionCategories = categories
+                    .Select(c => Enum.TryParse<QuestionCategory>(c, true, out var cat) ? cat : (QuestionCategory?)null)
+                    .Where(c => c.HasValue)
+                    .Select(c => c!.Value)
+                    .ToArray();
+            }
+            else
+            {
+                currentSettings.QuestionCategories = existingSettings.QuestionCategories;
+            }
+
+            if (!string.IsNullOrEmpty(maxDifficulty) && Enum.TryParse<DifficultyLevel>(maxDifficulty, true, out var difficulty))
+            {
+                currentSettings.MaxDifficulty = difficulty;
+            }
+            else
+            {
+                currentSettings.MaxDifficulty = existingSettings.MaxDifficulty;
+            }
+
+            // Create new game engine with updated settings
+            var newGameEngine = new GameEngineService(_questionService, _logger, currentSettings, gameId);
+
+            // Re-add all existing players
+            foreach (var player in currentPlayers)
+            {
+                newGameEngine.AddPlayer(player.Name, player.Id, player.JoinedGameAt);
+            }
+
+            // Replace the game engine
+            _activeGames.TryUpdate(gameId, newGameEngine, gameEngine);
+
+            // Notify all players in the game about the updated settings
+            await Clients.Group(gameId).SendAsync("SettingsUpdated", new
+            {
+                settings = new
+                {
+                    maxPlayers = currentSettings.MaxPlayers,
+                    questionsPerGame = currentSettings.QuestionsPerGame,
+                    defaultTimeLimit = currentSettings.DefaultTimeLimit,
+                    questionCategories = currentSettings.QuestionCategories.Select(c => c.ToString()).ToArray(),
+                    maxDifficulty = currentSettings.MaxDifficulty.ToString()
                 }
             });
         }
@@ -135,6 +227,33 @@ namespace TriviaBackend.Hubs
             await Clients.Caller.SendAsync("JoinedGame", new
             {
                 gameId,
+                playerId,
+                playerName,
+                players = players.Select(p => new { p.Id, p.Name, p.IsActive })
+            });
+
+            return playerId;
+        }
+
+        // Special version for game creator - doesn't send JoinedGame event
+        private async Task<int> JoinGameInternalForCreator(string gameId, string playerName, GameEngineService gameEngine)
+        {
+            var playerId = GeneratePlayerId(gameEngine);
+
+            if (!gameEngine.AddPlayer(playerName, playerId))
+            {
+                await Clients.Caller.SendAsync("Error", "Could not join game");
+                return -1;
+            }
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+
+            _playerGameMap.TryAdd(Context.ConnectionId, gameId);
+
+            // Only send PlayerJoined to the group (not JoinedGame to caller)
+            var players = gameEngine.GetPlayers();
+            await Clients.Group(gameId).SendAsync("PlayerJoined", new
+            {
                 playerId,
                 playerName,
                 players = players.Select(p => new { p.Id, p.Name, p.IsActive })
@@ -238,13 +357,23 @@ namespace TriviaBackend.Hubs
                 return;
             }
 
+            // Get player's score before submitting answer
+            var player = gameEngine.GetPlayers().FirstOrDefault(p => p.Id == playerId);
+            var scoreBefore = player?.CurrentGameScore ?? 0;
+
             var result = gameEngine.SubmitAnswer(playerId, answerIndex);
             _logger.LogInformation($"Answer result: {result}");
+
+            // Calculate earned points by comparing scores
+            var scoreAfter = player?.CurrentGameScore ?? 0;
+            var earnedPoints = scoreAfter - scoreBefore;
 
             await Clients.Caller.SendAsync("AnswerResult", new
             {
                 result = result.ToString(),
-                isCorrect = result == AnswerResult.Correct
+                isCorrect = result == AnswerResult.Correct,
+                earnedPoints = earnedPoints,
+                correctAnswer = gameEngine.CurrentQuestion?.CorrectAnswerIndex
             });
 
             if (gameEngine.AllPlayersAnswered())
@@ -307,11 +436,11 @@ namespace TriviaBackend.Hubs
 
             _logger.LogInformation($"Sending question {gameEngine.CurrentQuestionNumber} (ID: {question.Id}) to game {gameId}, TimeLimit: {question.TimeLimit}s");
 
-            await Clients.Group(gameId).SendAsync("NewQuestion", new
+            await Clients.Group(gameId).SendAsync("QuestionSent", new
             {
                 questionNumber = gameEngine.CurrentQuestionNumber,
                 questionText = question.QuestionText,
-                answerOptions = question.AnswerOptions, 
+                answerOptions = question.AnswerOptions,
                 category = question.Category.ToString(),
                 difficulty = question.Difficulty.ToString(),
                 timeLimit = question.TimeLimit,
@@ -398,7 +527,7 @@ namespace TriviaBackend.Hubs
 
             var leaderboard = gameEngine.GetCurrentGameLeaderboard();
 
-            await _staticHubContext.Clients.Group(gameId).SendAsync("AnswerRevealed", new
+            await _staticHubContext.Clients.Group(gameId).SendAsync("QuestionRevealed", new
             {
                 correctAnswer = question.CorrectAnswerIndex,
                 correctAnswerText = question.AnswerOptions[question.CorrectAnswerIndex],
@@ -499,7 +628,7 @@ namespace TriviaBackend.Hubs
                 }
 
                 Console.WriteLine($"Found {playerUsernames.Count} players in game");
-                
+
                 _logger.LogInformation($"Found {playerUsernames.Count} players in game");
 
                 foreach (var gamePlayer in finalLeaderboard)
@@ -513,7 +642,7 @@ namespace TriviaBackend.Hubs
                     }
 
                     Console.WriteLine($"Looking up username: {username}");
-                    
+
                     _logger.LogInformation($"Looking up username: {username}");
 
                     var player = await _dbContext.Users

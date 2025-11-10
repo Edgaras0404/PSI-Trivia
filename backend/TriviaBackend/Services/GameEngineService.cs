@@ -33,6 +33,8 @@ namespace TriviaBackend.Services
         public TimeSpan TimeRemaining => _currentQuestion != null ?
             TimeSpan.FromSeconds(_currentQuestion.TimeLimit) - (DateTime.Now - _questionStartTime) : TimeSpan.Zero;
 
+        public GameSettings GetSettings() => _settings;
+
         public bool AddPlayer(string playerName, int? playerId = null, DateTime? joinTime = null)
         {
             if (_players.Count >= _settings.MaxPlayers)
@@ -63,11 +65,19 @@ namespace TriviaBackend.Services
 
             try
             {
-                var questions = _questionService.GetQuestions(categories, maxDifficulty, _settings.QuestionsPerGame);
+                var categoriesToUse = categories ?? _settings.QuestionCategories;
+                var difficultyToUse = maxDifficulty ?? _settings.MaxDifficulty;
+
+                var questions = _questionService.GetQuestions(categoriesToUse, difficultyToUse, _settings.QuestionsPerGame);
+
+                _logger.LogInformation($"Requested {_settings.QuestionsPerGame} questions, got {questions?.Count ?? 0} questions");
+                _logger.LogInformation($"Categories: {string.Join(", ", categoriesToUse.Select(c => c.ToString()))}");
+                _logger.LogInformation($"Max Difficulty: {difficultyToUse}");
 
                 if (questions == null || questions.Count == 0)
                 {
                     Console.WriteLine("No questions returned from QuestionService");
+                    _logger.LogError("No questions returned from QuestionService");
                     return false;
                 }
 
@@ -75,6 +85,7 @@ namespace TriviaBackend.Services
                 foreach (var question in questions)
                 {
                     _gameQuestions.Enqueue(question);
+                    _logger.LogInformation($"Enqueued question {question.Id}: {question.QuestionText} ({question.Category}, {question.Difficulty})");
                 }
 
                 Status = GameStatus.InProgress;
@@ -91,7 +102,8 @@ namespace TriviaBackend.Services
 
         public bool NextQuestion()
         {
-            if (DateTime.Now - _questionStartTime < TimeSpan.FromSeconds(5))
+            // Only enforce 5-second delay if we've already shown a question
+            if (CurrentQuestionNumber > 0 && DateTime.Now - _questionStartTime < TimeSpan.FromSeconds(5))
                 return true;
 
             if (_gameQuestions.Count == 0)

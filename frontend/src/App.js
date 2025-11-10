@@ -308,9 +308,6 @@ function TriviaGame({ username, onLogout }) {
                         >
                             <User style={{ width: '20px', height: '20px', color: 'white' }} />
                         </button>
-                        <div className="user-info">
-                            <span>Playing as: <strong>{username}</strong></span>
-                        </div>
                         <div className="header-buttons">
                             <button onClick={fetchGlobalLeaderboard} className="leaderboard-button">
                                 <Trophy className="icon" />

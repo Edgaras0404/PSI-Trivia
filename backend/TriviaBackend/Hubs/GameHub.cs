@@ -112,74 +112,84 @@ namespace TriviaBackend.Hubs
         public async Task UpdateGameSettings(string gameId, int? maxPlayers = null, int? questionsPerGame = null,
             string[]? categories = null, string? maxDifficulty = null)
         {
-            if (!_activeGames.TryGetValue(gameId, out var gameEngine))
+            try
             {
-                await Clients.Caller.SendAsync("Error", "Game not found");
-                return;
-            }
-
-            if (gameEngine.Status != GameStatus.Waiting)
-            {
-                await Clients.Caller.SendAsync("Error", "Cannot update settings after game has started");
-                return;
-            }
-
-            var existingSettings = gameEngine.GetSettings();
-            var currentPlayers = gameEngine.GetPlayers();
-
-            var currentSettings = new GameSettings
-            {
-                MaxPlayers = maxPlayers ?? existingSettings.MaxPlayers,
-                QuestionsPerGame = questionsPerGame ?? existingSettings.QuestionsPerGame,
-                DefaultTimeLimit = existingSettings.DefaultTimeLimit
-            };
-
-            if (categories != null && categories.Length > 0)
-            {
-                currentSettings.QuestionCategories = categories
-                    .Select(c => Enum.TryParse<QuestionCategory>(c, true, out var cat) ? cat : (QuestionCategory?)null)
-                    .Where(c => c.HasValue)
-                    .Select(c => c!.Value)
-                    .ToArray();
-            }
-            else
-            {
-                currentSettings.QuestionCategories = existingSettings.QuestionCategories;
-            }
-
-            if (!string.IsNullOrEmpty(maxDifficulty) && Enum.TryParse<DifficultyLevel>(maxDifficulty, true, out var difficulty))
-            {
-                currentSettings.MaxDifficulty = difficulty;
-            }
-            else
-            {
-                currentSettings.MaxDifficulty = existingSettings.MaxDifficulty;
-            }
-
-            // Create new game engine with updated settings
-            var newGameEngine = new GameEngineService(_questionService, _logger, currentSettings, gameId);
-
-            // Re-add all existing players
-            foreach (var player in currentPlayers)
-            {
-                newGameEngine.AddPlayer(player.Name, player.Id, player.JoinedGameAt);
-            }
-
-            // Replace the game engine
-            _activeGames.TryUpdate(gameId, newGameEngine, gameEngine);
-
-            // Notify all players in the game about the updated settings
-            await Clients.Group(gameId).SendAsync("SettingsUpdated", new
-            {
-                settings = new
+                if (!_activeGames.TryGetValue(gameId, out var gameEngine))
                 {
-                    maxPlayers = currentSettings.MaxPlayers,
-                    questionsPerGame = currentSettings.QuestionsPerGame,
-                    defaultTimeLimit = currentSettings.DefaultTimeLimit,
-                    questionCategories = currentSettings.QuestionCategories.Select(c => c.ToString()).ToArray(),
-                    maxDifficulty = currentSettings.MaxDifficulty.ToString()
+                    await Clients.Caller.SendAsync("Error", "Game not found");
+
+                    return;
                 }
-            });
+
+                if (gameEngine.Status != GameStatus.Waiting)
+                {
+                    await Clients.Caller.SendAsync("Error", "Cannot update settings after game has started");
+                    return;
+                }
+
+
+                var existingSettings = gameEngine.GetSettings();
+                var currentPlayers = gameEngine.GetPlayers();
+
+                var currentSettings = new GameSettings
+                {
+                    MaxPlayers = maxPlayers ?? existingSettings.MaxPlayers,
+                    QuestionsPerGame = questionsPerGame ?? existingSettings.QuestionsPerGame,
+                    DefaultTimeLimit = existingSettings.DefaultTimeLimit
+                };
+
+                if (categories != null && categories.Length > 0)
+                {
+                    currentSettings.QuestionCategories = categories
+                        .Select(c => Enum.TryParse<QuestionCategory>(c, true, out var cat) ? cat : (QuestionCategory?)null)
+                        .Where(c => c.HasValue)
+                        .Select(c => c!.Value)
+                        .ToArray();
+                }
+                else
+                {
+                    currentSettings.QuestionCategories = existingSettings.QuestionCategories;
+                }
+
+                if (!string.IsNullOrEmpty(maxDifficulty) && Enum.TryParse<DifficultyLevel>(maxDifficulty, true, out var difficulty))
+                {
+                    currentSettings.MaxDifficulty = difficulty;
+                }
+                else
+                {
+                    currentSettings.MaxDifficulty = existingSettings.MaxDifficulty;
+                }
+
+                // Create new game engine with updated settings
+                var newGameEngine = new GameEngineService(_questionService, _logger, currentSettings, gameId);
+
+                // Re-add all existing players
+                foreach (var player in currentPlayers)
+                {
+                    newGameEngine.AddPlayer(player.Name, player.Id, player.JoinedGameAt);
+                }
+
+                // Replace the game engine
+                _activeGames.TryUpdate(gameId, newGameEngine, gameEngine);
+
+                // Notify all players in the game about the updated settings
+                await Clients.Group(gameId).SendAsync("SettingsUpdated", new
+                {
+                    settings = new
+                    {
+                        maxPlayers = currentSettings.MaxPlayers,
+                        questionsPerGame = currentSettings.QuestionsPerGame,
+                        defaultTimeLimit = currentSettings.DefaultTimeLimit,
+                        questionCategories = currentSettings.QuestionCategories.Select(c => c.ToString()).ToArray(),
+                        maxDifficulty = currentSettings.MaxDifficulty.ToString()
+                    }
+                });
+            }
+            catch (Exception)
+            {
+                _logger.LogError($"ERROR: Cannot update player stats");
+                throw new GameUpdateException("Error updating player stats");
+            }
         }
 
         /// <summary>
@@ -652,7 +662,7 @@ namespace TriviaBackend.Hubs
                     if (player == null)
                     {
                         _logger.LogError($"Player {username} not found");
-                        throw new PlayerNotFoundException($"Player {username} not found");
+                        throw new GameUpdateException($"Player {username} not found");
                     }
                     else
                     {
@@ -673,7 +683,7 @@ namespace TriviaBackend.Hubs
             catch (Exception ex)
             {
                 _logger.LogError($"ERROR updating player statistics: {ex.Message}");
-                throw new UpdatePlayerStatsException("Error while updating player statistics");
+                throw new PlayerStatsUpdateException("Error while updating player statistics");
             }
 
         }

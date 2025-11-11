@@ -4,19 +4,28 @@ import './Editor.css';
 import App from './App';
 import LiquidChrome from './LiquidChrome';
 
-const QuestionCategory = {
-    Science: "Science",
-    History: "History",
-    Sports: "Sports",
-    Geography: "Geography",
-    Literature: "Literature"
-};
-
 const DifficultyLevel = {
     Easy: "Easy",
     Medium: "Medium",
     Hard: "Hard"
 };
+
+// map enum to int
+const CategoryMap = {
+    Geography: 0,
+    History: 1,
+    Science: 2,
+    Sports: 3,
+    Literature: 4,
+};
+const CategoryMapReverse = Object.fromEntries(Object.entries(CategoryMap).map(([k, v]) => [v, k]));
+
+const DifficultyMap = {
+    Easy: 1,
+    Medium: 2,
+    Hard: 3,
+};
+const DifficultyMapReverse = Object.fromEntries(Object.entries(DifficultyMap).map(([k, v]) => [v, k]));
 
 const Editor = () => {
     const [idInput, setIdInput] = useState('');
@@ -26,8 +35,8 @@ const Editor = () => {
         questionText: '',
         answerOptions: ['', '', '', ''],
         correctAnswerIndex: 0,
-        category: QuestionCategory.Geography,
-        difficulty: DifficultyLevel.Easy,
+        category: "Null",
+        difficulty: "Null",
     });
     const [message, setMessage] = useState('');
 
@@ -42,10 +51,10 @@ const Editor = () => {
         return arr.slice(0, 4);
     };
 
-    const API_BASE = 'https://localhost:5001/api/questions';
+    const API_BASE = 'https://localhost:5001/api/Editor';
 
     const apiGetQuestion = async (id) => {
-        const url = `${API_BASE}/${id}`;
+        const url = `${API_BASE}/getquestion/${id}`;
         try {
             const res = await fetch(url);
             if (!res.ok) {
@@ -62,8 +71,50 @@ const Editor = () => {
         }
     };
 
+    const apiCreateQuestion = async (payload) => {
+        const url = `${API_BASE}/addquestion`;
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const text = await res.text().catch(() => '');
+                console.error(`POST ${url} failed: ${res.status} ${res.statusText}`, text);
+                setMessage(text || `CREATE failed: ${res.status}`);
+                return null;
+            }
+
+            const contentType = res.headers.get('content-type') || '';
+            if (res.status === 204) {
+                return {};
+            }
+            if (contentType.includes('application/json')) {
+                try {
+                    return await res.json();
+                } catch (err) {
+                    console.warn(`POST ${url} returned invalid JSON`, err);
+                    return {};
+                }
+            }
+            const text = await res.text().catch(() => '');
+            if (!text) return {};
+            try {
+                return JSON.parse(text);
+            } catch {
+                return { _raw: text };
+            }
+        } catch (err) {
+            console.error(`POST ${url} network error:`, err);
+            setMessage('Network error while creating question');
+            return null;
+        }
+    };
+
     const apiDeleteQuestion = async (id) => {
-        const url = `${API_BASE}/${id}`;
+        const url = `${API_BASE}/deletequestion/${id}`;
         try {
             const res = await fetch(url, { method: 'DELETE' });
             if (!res.ok) {
@@ -80,27 +131,63 @@ const Editor = () => {
         }
     };
 
-    const apiCreateQuestion = async (payload) => {
-        const url = `${API_BASE}`;
-        try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!res.ok) {
-                const text = await res.text().catch(() => '');
-                console.error(`POST ${url} failed: ${res.status} ${res.statusText}`, text);
-                setMessage(text || `CREATE failed: ${res.status}`);
-                return null;
-            }
-            return await res.json();
-        } catch (err) {
-            console.error(`POST ${url} network error:`, err);
-            setMessage('Network error while creating question');
-            return null;
+    // ...existing code...
+    // ...existing code...
+    const handleNew = async () => {
+        if (!current) { setMessage('No data to create'); return; }
+
+        // Build DTO matching backend TriviaQuestionDTO
+        const payload = {
+            QuestionText: String(current.questionText || ''),
+            Answer1: String((current.answerOptions && current.answerOptions[0]) || ''),
+            Answer2: String((current.answerOptions && current.answerOptions[1]) || ''),
+            Answer3: String((current.answerOptions && current.answerOptions[2]) || ''),
+            Answer4: String((current.answerOptions && current.answerOptions[3]) || ''),
+            CorrectAnswerIndex: Number(current.correctAnswerIndex) || 0,
+            Category: CategoryMap[current.category] ?? 0,
+            Difficulty: DifficultyMap[current.difficulty] ?? 1,
+            TimeLimit: Number(current.timeLimit) || 30,
+        };
+
+        setMessage('Creating on server...');
+        const created = await apiCreateQuestion(payload);
+        if (created === null) {
+            return;
         }
+
+        const resp = { ...payload, ...created };
+
+        const createdAnswers = [
+            resp.Answer1 ?? payload.Answer1,
+            resp.Answer2 ?? payload.Answer2,
+            resp.Answer3 ?? payload.Answer3,
+            resp.Answer4 ?? payload.Answer4,
+        ];
+
+        const createdCorrectIndex = Number(resp.CorrectAnswerIndex ?? payload.CorrectAnswerIndex);
+
+        const createdCategory = (resp.Category != null)
+            ? CategoryMapReverse[Number(resp.Category)]
+            : Object.keys(CategoryMap).find(k => CategoryMap[k] === payload.Category) ?? 'Geography';
+
+        const createdDifficulty = (resp.Difficulty != null)
+            ? DifficultyMapReverse[Number(resp.Difficulty)]
+            : Object.keys(DifficultyMap).find(k => DifficultyMap[k] === payload.Difficulty) ?? 'Easy';
+
+        setCurrent({
+            id: resp.id ?? current.id ?? '',
+            timeLimit: resp.TimeLimit ?? payload.TimeLimit,
+            questionText: resp.QuestionText ?? payload.QuestionText,
+            answerOptions: ensureFourOptions(createdAnswers),
+            correctAnswerIndex: Math.max(0, Math.min(3, createdCorrectIndex)),
+            category: createdCategory,
+            difficulty: createdDifficulty,
+        });
+
+        if (resp.id) setIdInput(String(resp.id));
+        setMessage(`Created question${resp.id ? ` ${resp.id}` : ''}`);
     };
+
 
     const handleGet = async () => {
         const id = parseId(idInput);
@@ -118,32 +205,9 @@ const Editor = () => {
                 questionText: '',
                 answerOptions: ['', '', '', ''],
                 correctAnswerIndex: 0,
-                category: QuestionCategory.Geography,
-                difficulty: DifficultyLevel.Easy,
+                category: "Null",
+                difficulty: "Null",
             });
-        }
-    };
-
-    const handleNew = async () => {
-        if (!current) { setMessage('No data to create'); return; }
-
-        const providedId = parseId(idInput);
-        const payload = {
-            ...(providedId ? { id: providedId } : {}),
-            timeLimit: Number(current.timeLimit) || 0,
-            questionText: String(current.questionText || ''),
-            answerOptions: ensureFourOptions(current.answerOptions).map(a => String(a || '')),
-            correctAnswerIndex: Number(current.correctAnswerIndex) || 0,
-            category: current.category,
-            difficulty: current.difficulty,
-        };
-
-        setMessage('Creating on server...');
-        const created = await apiCreateQuestion(payload);
-        if (created) {
-            setCurrent({ ...created, answerOptions: ensureFourOptions(created.answerOptions) });
-            setIdInput(String(created.id));
-            setMessage(`Created question ${created.id}`);
         }
     };
 
@@ -160,8 +224,8 @@ const Editor = () => {
                 questionText: '',
                 answerOptions: ['', '', '', ''],
                 correctAnswerIndex: 0,
-                category: QuestionCategory.Geography,
-                difficulty: DifficultyLevel.Easy,
+                category: "Null",
+                difficulty: "Null",
             });
             setIdInput('');
             setMessage(`Deleted question ${id}`);
@@ -257,15 +321,16 @@ const Editor = () => {
                     <div className="two-columns">
                         <div className="form-field">
                             <label className="label-small">Category</label>
-                            <select className="input-full" value={current?.category ?? QuestionCategory.Geography} onChange={(e) => updateCurrentField('category', e.target.value)}>
-                                {Object.values(QuestionCategory).map(v => <option key={v} value={v}>{v}</option>)}
+                            <select className="input-full" value={current?.category ?? "Null"} onChange={(e) => updateCurrentField('category', e.target.value)}>
+
+                                {Object.keys(CategoryMap).map(v => <option key={v} value={v}>{v}</option>)}
                             </select>
                         </div>
 
                         <div className="form-field">
                             <label className="label-small">Difficulty</label>
                             <select className="input-full" value={current?.difficulty ?? DifficultyLevel.Easy} onChange={(e) => updateCurrentField('difficulty', e.target.value)}>
-                                {Object.values(DifficultyLevel).map(v => <option key={v} value={v}>{v}</option>)}
+                                {Object.keys(DifficultyMap).map(v => <option key={v} value={v}>{v}</option>)}
                             </select>
                         </div>
                     </div>

@@ -1,14 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using TriviaBackend.Data;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
-using TriviaBackend.Models.Records;
 
 namespace TriviaBackend.Services
 {

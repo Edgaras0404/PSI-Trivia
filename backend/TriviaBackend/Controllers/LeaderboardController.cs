@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TriviaBackend.Data;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services;

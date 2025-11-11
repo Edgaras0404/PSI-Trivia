@@ -75,7 +75,7 @@ const Profile = ({ username, onBack }) => {
 
     const stats = [
         { label: "Games Played", value: userData.gamesPlayed, icon: Target, color: "#3b82f6" },
-        { label: "Total Points", value: userData.totalPoints?.toLocaleString() || '0', icon: Trophy, color: "#f59e0b" },
+        { label: "Total Points", value: userData.totalPoints?.tolocalString() || '0', icon: Trophy, color: "#f59e0b" },
         { label: "Current ELO", value: userData.elo, icon: TrendingUp, color: "#10b981" },
         { label: "Global Rank", value: `#${userData.rank}`, icon: Award, color: "#667eea" }
     ];
@@ -103,10 +103,6 @@ const Profile = ({ username, onBack }) => {
                         >
                             <ArrowLeft className="icon" />
                             Back
-                        </button>
-                        <h2 style={{ margin: 0, color: '#1a202c', fontSize: '28px' }}>Player Profile</h2>
-                        <button className="button" style={{ background: '#f3f4f6', color: '#4b5563' }}>
-                            <Settings className="icon" />
                         </button>
                     </div>
 

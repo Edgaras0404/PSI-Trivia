@@ -273,6 +273,79 @@ namespace TriviaBackend.Hubs
         }
 
         /// <summary>
+        /// Remove a player from a game and cleanup if needed
+        /// </summary>
+        /// <param name="gameId"></param>
+        /// <param name="playerId"></param>
+        /// <returns></returns>
+        public async Task LeaveGame(string gameId, int playerId)
+        {
+            _logger.LogInformation($"=== LeaveGame called: gameId={gameId}, playerId={playerId} ===");
+
+            if (!_activeGames.TryGetValue(gameId, out var gameEngine))
+            {
+                _logger.LogWarning($"Game {gameId} not found when trying to leave");
+                return;
+            }
+
+            var players = gameEngine.GetPlayers();
+            var player = players.FirstOrDefault(p => p.Id == playerId);
+
+            if (player != null)
+            {
+                players.Remove(player);
+
+                if (_gamePlayerUsernames.TryGetValue(gameId, out var playerDict))
+                {
+                    playerDict.TryRemove(playerId, out _);
+                }
+
+                _logger.LogInformation($"Player {playerId} removed from game {gameId}. Remaining players: {players.Count}");
+
+                _playerGameMap.TryRemove(Context.ConnectionId, out _);
+
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
+
+                if (players.Count == 0)
+                {
+                    _logger.LogInformation($"No players left in game {gameId}, cleaning up...");
+
+                    if (_gameTimers.TryRemove(gameId, out var cts))
+                    {
+                        cts.Cancel();
+                        cts.Dispose();
+                    }
+
+                    var keysToRemove = _questionRevealed.Keys.Where(k => k.StartsWith($"{gameId}_")).ToList();
+                    foreach (var key in keysToRemove)
+                    {
+                        _questionRevealed.TryRemove(key, out _);
+                    }
+
+                    _activeGames.TryRemove(gameId, out _);
+                    _gamePlayerUsernames.TryRemove(gameId, out _);
+
+                    _logger.LogInformation($"Game {gameId} completely removed");
+                }
+                else
+                {
+                    await Clients.Group(gameId).SendAsync("PlayerLeft", new
+                    {
+                        playerId,
+                        playerName = player.Name,
+                        players = players.Select(p => new { p.Id, p.Name, p.IsActive })
+                    });
+
+                    _logger.LogInformation($"Notified remaining players in game {gameId} about player {playerId} leaving");
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"Player {playerId} not found in game {gameId}");
+            }
+        }
+
+        /// <summary>
         /// Start the trivia match
         /// </summary>
         /// <param name="gameId"></param>
@@ -725,23 +798,42 @@ namespace TriviaBackend.Hubs
         /// <returns></returns>
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
+            _logger.LogInformation($"=== OnDisconnectedAsync called for connection {Context.ConnectionId} ===");
+
             if (_playerGameMap.TryGetValue(Context.ConnectionId, out var gameId))
             {
-                _playerGameMap.TryRemove(Context.ConnectionId, out _);
+                _logger.LogInformation($"Connection {Context.ConnectionId} was in game {gameId}");
 
-                if (_activeGames.ContainsKey(gameId))
+                if (_activeGames.TryGetValue(gameId, out var gameEngine))
                 {
+                    var players = gameEngine.GetPlayers();
+
+                    _logger.LogInformation($"Game {gameId} still active with {players.Count} players");
+
                     await Clients.Group(gameId).SendAsync("PlayerDisconnected", Context.ConnectionId);
+
+                    if (gameEngine.Status == GameStatus.Waiting && players.Count == 1)
+                    {
+                        _logger.LogInformation($"Last player disconnected from waiting game {gameId}, cleaning up");
+
+                        if (_gameTimers.TryRemove(gameId, out var cts))
+                        {
+                            cts.Cancel();
+                            cts.Dispose();
+                        }
+
+                        _activeGames.TryRemove(gameId, out _);
+                        _gamePlayerUsernames.TryRemove(gameId, out _);
+                    }
                 }
+
+                _playerGameMap.TryRemove(Context.ConnectionId, out _);
+            }
+            else
+            {
+                _logger.LogInformation($"Connection {Context.ConnectionId} was not in any game");
             }
 
             await base.OnDisconnectedAsync(exception);
         }
-
-        private static int GeneratePlayerId(GameEngineService gameEngine)
-        {
-            var players = gameEngine.GetPlayers();
-            return players.Count > 0 ? players.Max(p => p.Id) + 1 : 1;
-        }
     }
-}

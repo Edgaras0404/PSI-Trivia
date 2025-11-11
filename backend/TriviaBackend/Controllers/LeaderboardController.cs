@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TriviaBackend.Data;
+using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services;
 
@@ -8,7 +9,7 @@ namespace TriviaBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LeaderboardController(PlayerService _PlayerService) : ControllerBase
+    public class LeaderboardController(PlayerService _PlayerService, ILogger<ExceptionHandler> _logger) : ControllerBase
     {
         /// <summary>
         /// Get global ranking of players by elo
@@ -48,7 +49,10 @@ namespace TriviaBackend.Controllers
             var targetPlayer = await _PlayerService.GetPlayerByUsernameAsync(username);
 
             if (targetPlayer == null)
+            {
+                _logger.LogError("ERROR: Player not found");
                 return NotFound("Player not found");
+            }
 
             var allPlayers = await _PlayerService.GetAllPlayersAsync();
 
@@ -77,12 +81,23 @@ namespace TriviaBackend.Controllers
             var player = await _PlayerService.GetPlayerByUsernameAsync(statsUpdate.Username);
 
             if (player == null)
+            {
+                _logger.LogError("ERROR: Player not found");
                 return NotFound("Player not found");
+            }
 
             player.Elo += statsUpdate.EloChange;
             player.GamesPlayed++;
 
-            await _PlayerService.UpdatePlayerAsync(player);
+            try
+            {
+                await _PlayerService.UpdatePlayerAsync(player);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"ERROR updating player statistics: {ex.Message}");
+                throw new PlayerStatsUpdateException("Error while updating player statistics");
+            }
 
             return Ok(new
             {

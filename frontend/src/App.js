@@ -1,10 +1,11 @@
-﻿import React, { useState, useEffect, Link } from 'react';
-import { Users, Trophy, Clock, Play, LogIn, Plus, LogOut, Settings, Filter, Notebook } from 'lucide-react';
+﻿import React, { useState, useEffect } from 'react';
+import { Users, Trophy, Clock, ArrowLeft, Play, LogIn, Plus, LogOut, User, Settings, Filter, Notebook } from 'lucide-react';
 import Login from './Login';
 import Editor from './Editor';
 import './App.css';
 import LiquidChrome from './LiquidChrome';
 import TextPressure from './TextPressure';
+import Profile from './Profile';
 
 class GameConnection {
     constructor() {
@@ -72,6 +73,7 @@ function TriviaGame({ username, onLogout, onEditor }) {
     const [showAnswer, setShowAnswer] = useState(false);
     const [showGlobalLeaderboard, setShowGlobalLeaderboard] = useState(false);
     const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
+    const [showProfile, setShowProfile] = useState(false);
     const [isHost, setIsHost] = useState(false);
 
     // Lobby settings state
@@ -125,6 +127,11 @@ function TriviaGame({ username, onLogout, onEditor }) {
             setIsHost(false);
             setGameState('lobby');
         };
+
+        const handlePlayerLeft = (data) => {
+            console.log('Player left:', data);
+            setPlayers(data.players);
+        }
 
         const handlePlayerJoined = (data) => {
             console.log('Player joined:', data);
@@ -180,6 +187,7 @@ function TriviaGame({ username, onLogout, onEditor }) {
         connection.on('GameCreated', handleGameCreated);
         connection.on('JoinedGame', handleJoinedGame);
         connection.on('PlayerJoined', handlePlayerJoined);
+        connection.on('PlayerLeft', handlePlayerLeft);
         connection.on('SettingsUpdated', handleSettingsUpdated);
         connection.on('GameStarted', handleGameStarted);
         connection.on('QuestionSent', handleQuestionSent);
@@ -192,6 +200,7 @@ function TriviaGame({ username, onLogout, onEditor }) {
             connection.off('GameCreated', handleGameCreated);
             connection.off('JoinedGame', handleJoinedGame);
             connection.off('PlayerJoined', handlePlayerJoined);
+            connection.off('PlayerLeft', handlePlayerLeft);
             connection.off('SettingsUpdated', handleSettingsUpdated);
             connection.off('GameStarted', handleGameStarted);
             connection.off('QuestionSent', handleQuestionSent);
@@ -260,16 +269,52 @@ function TriviaGame({ username, onLogout, onEditor }) {
         await connection.invoke('SubmitAnswer', gameId, playerId, index);
     };
 
+    const leaveGame = async () => {
+        if (gameId && playerId) {
+            try {
+                console.log(`Leaving game ${gameId} as player ${playerId}`);
+                await connection.invoke('LeaveGame', gameId, playerId);
+            } catch (error) {
+                console.error('Error leaving game:', error);
+            }
+        }
+
+        setGameState('menu');
+        setGameId('');
+        setPlayerId(null);
+        setPlayers([]);
+        setCurrentQuestion(null);
+        setLeaderboard([]);
+        setIsHost(false);
+        setSelectedAnswer(null);
+        setAnswerResult(null);
+        setShowAnswer(false);
+        setSelectedCategories(['Science', 'History', 'Sports', 'Geography', 'Literature']);
+        setSelectedDifficulty('Hard');
+        setMaxPlayers(10);
+        setQuestionsPerGame(10);
+    };
+
     const fetchGlobalLeaderboard = async () => {
         try {
+            console.log('Fetching global leaderboard...');
             const response = await fetch('https://localhost:5001/api/leaderboard/global?top=100');
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('Leaderboard data:', data);
                 setGlobalLeaderboard(data);
                 setShowGlobalLeaderboard(true);
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to fetch leaderboard:', response.status, errorText);
+                alert(`Failed to load leaderboard: ${response.status} ${response.statusText}`);
             }
         } catch (error) {
             console.error('Error fetching leaderboard:', error);
+            alert(`Error loading leaderboard: ${error.message}`);
         }
     };
 
@@ -304,61 +349,12 @@ function TriviaGame({ username, onLogout, onEditor }) {
         );
     }
 
-    if (gameState === 'menu') {
+    if (showProfile) {
+        return <Profile username={username} onBack={() => setShowProfile(false)} />;
+    }
+    if (showGlobalLeaderboard) {
         return (
             <>
-                <div className="user-header">
-                    <div className="user-info">
-                        Welcome, <strong>{username}</strong>
-                    </div>
-                    <div className="header-buttons">
-                        <button className="navbar-button editor-button" onClick={onEditor}>
-                            <Notebook className="icon" />
-                            Editor
-                        </button>
-                        <button className="navbar-button leaderboard-button" onClick={fetchGlobalLeaderboard}>
-                            <Trophy className="icon" />
-                            Leaderboard
-                        </button>
-                        <button className="navbar-button logout-button" onClick={onLogout}>
-                            <LogOut className="icon" />
-                            Logout
-                        </button>
-                    </div>
-                </div>
-
-                {showGlobalLeaderboard && (
-                    <div className="modal-overlay" onClick={() => setShowGlobalLeaderboard(false)}>
-                        <div className="modal-content" onClick={e => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <h2>Global Leaderboard</h2>
-                                <button className="close-button" onClick={() => setShowGlobalLeaderboard(false)}>×</button>
-                            </div>
-                            <div className="modal-body">
-                                <div className="global-leaderboard">
-                                    {globalLeaderboard.length > 0 ? (
-                                        globalLeaderboard.map((player, index) => (
-                                            <div
-                                                key={player.username}
-                                                className={`leaderboard-row ${player.username === username ? 'highlight' : ''}`}
-                                            >
-                                                <div className="rank-badge">{index + 1}</div>
-                                                <div className="player-details">
-                                                    <div className="player-username">{player.username}</div>
-                                                    <div className="player-games">{player.gamesPlayed} games played</div>
-                                                </div>
-                                                <div className="player-elo">{player.elo}</div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="empty-leaderboard">No players on the leaderboard yet</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 <div className="liquid-chrome-background">
                     <LiquidChrome
                         baseColor={[0.4, 0.5, 0.9]}
@@ -370,9 +366,126 @@ function TriviaGame({ username, onLogout, onEditor }) {
                     />
                 </div>
                 <div className="container">
+                    <div className="card" style={{ maxWidth: '700px' }}>
+                        <div className="header">
+                            <Trophy className="icon-large" />
+                            <h2>Global Leaderboard</h2>
+                            <p>Top players ranked by ELO rating</p>
+                        </div>
+
+                        <div className="results" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                            {globalLeaderboard.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+                                    No players found
+                                </div>
+                            ) : (
+                                globalLeaderboard.map((player, index) => {
+                                    const medals = ['🥇', '🥈', '🥉'];
+                                    return (
+                                        <div
+                                            key={player.username || index}
+                                            className={`result-item ${index < 3 ? `rank-${index + 1}` : ''}`}
+                                            style={{
+                                                marginBottom: '10px',
+                                                background: index < 3 ? 'linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%)' : '#f9fafb'
+                                            }}
+                                        >
+                                            <div className="result-left">
+                                                <span style={{
+                                                    fontWeight: 'bold',
+                                                    minWidth: '30px',
+                                                    color: '#667eea'
+                                                }}>
+                                                    #{index + 1}
+                                                </span>
+                                                {index < 3 && <span className="medal">{medals[index]}</span>}
+                                                <div>
+                                                    <div className="player-name">
+                                                        {player.username}
+                                                        {player.username === username && (
+                                                            <span className="badge" style={{ marginLeft: '10px' }}>You</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="player-stats">
+                                                        {player.gamesPlayed} games played • {player.totalPoints} total points
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="final-score" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#667eea' }}>
+                                                    {player.elo}
+                                                </span>
+                                                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>ELO</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setShowGlobalLeaderboard(false)}
+                            className="button button-primary"
+                            style={{ marginTop: '20px' }}
+                        >
+                            <ArrowLeft className="icon" />
+                            Back to Menu
+                        </button>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    if (gameState === 'menu') {
+        return (
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
+                </div>
+                <div className="container">
+                    <div className="user-header">
+                        <button
+                            onClick={() => setShowProfile(true)}
+                            style={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                border: 'none',
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                transition: 'transform 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            <User style={{ width: '20px', height: '20px', color: 'white' }} />
+                        </button>
+                        <div className="header-buttons">
+                            <button onClick={fetchGlobalLeaderboard} className="leaderboard-button">
+                                <Trophy className="icon" />
+                                Leaderboard
+                            </button>
+                            <button onClick={onLogout} className="logout-button">
+                                <LogOut className="icon" />
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="card">
                         <div className="header">
-                            <div style={{ position: 'relative', height: '80px', marginBottom: '15px' }}>
+                            <div style={{ position: 'relative', height: '80px', marginBottom: '55px' }}>
                                 <TextPressure
                                     text="TRIVIA GAME"
                                     flex={true}
@@ -419,17 +532,14 @@ function TriviaGame({ username, onLogout, onEditor }) {
     if (gameState === 'lobby') {
         return (
             <>
-                <div className="user-header">
-                    <div className="user-info">
-                        Welcome, <strong>{username}</strong>
-                    </div>
-                    <div className="header-buttons">
-                        <button className="navbar-button logout-button" onClick={onLogout}>
-                            <LogOut className="icon" />
-                            Logout
-                        </button>
-                    </div>
-                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px' }}>
+                    <button
+                        onClick={leaveGame}
+                        className="button button-primary"
+                    >
+                        Back to Menu
+                    </button>
+                </div >
 
                 <div className="liquid-chrome-background">
                     <LiquidChrome
@@ -602,6 +712,15 @@ function TriviaGame({ username, onLogout, onEditor }) {
                             {!isHost && (
                                 <div className="section" style={{ textAlign: 'center' }}>
                                     <h3 style={{ color: '#1a202c', marginBottom: '20px' }}>Waiting for host to start the game...</h3>
+                                    <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                                        <button
+                                            onClick={leaveGame}
+                                            className="button button-secondary"
+                                        >
+                                            <ArrowLeft className="icon" />
+                                            Leave Lobby
+                                        </button>
+                                    </div>
                                     <div style={{ background: '#f7fafc', padding: '20px', borderRadius: '8px' }}>
                                         <h4 style={{ marginBottom: '15px', color: '#667eea' }}>Current Settings:</h4>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
@@ -750,15 +869,7 @@ function TriviaGame({ username, onLogout, onEditor }) {
                         </div>
 
                         <button
-                            onClick={() => {
-                                setGameState('menu');
-                                setGameId('');
-                                setPlayerId(null);
-                                setPlayers([]);
-                                setCurrentQuestion(null);
-                                setLeaderboard([]);
-                                setIsHost(false);
-                            }}
+                            onClick={leaveGame}
                             className="button button-primary"
                         >
                             Back to Menu

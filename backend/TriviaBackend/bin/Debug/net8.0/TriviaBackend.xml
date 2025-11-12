@@ -107,6 +107,14 @@
             <param name="playerName"></param>
             <returns></returns>
         </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.LeaveGame(System.String,System.Int32)">
+            <summary>
+            Remove a player from a game and cleanup if needed
+            </summary>
+            <param name="gameId"></param>
+            <param name="playerId"></param>
+            <returns></returns>
+        </member>
         <member name="M:TriviaBackend.Hubs.GameHub.StartGame(System.String,System.String[],System.String)">
             <summary>
             Start the trivia match
@@ -164,6 +172,13 @@
             <param name="player"></param>
             <param name="leaderboard"></param>
             <seealso href="https://en.wikipedia.org/wiki/Elo_rating_system"/>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.GeneratePlayerId(TriviaBackend.Services.GameEngineService)">
+            <summary>
+            Generate a unique Player ID for the game
+            </summary>
+            <param name="GameEngine"></param>
             <returns></returns>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.GetAvailableCategories">

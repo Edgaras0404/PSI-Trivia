@@ -781,6 +781,24 @@ namespace TriviaBackend.Hubs
         }
 
         /// <summary>
+        /// Generate a unique Player ID for the game
+        /// </summary>
+        /// <param name="GameEngine"></param>
+        /// <returns></returns>
+        private static int GeneratePlayerId(GameEngineService gameEngine)
+        {
+            var existingPlayers = gameEngine.GetPlayers();
+            var existingIds = existingPlayers.Select(p => p.Id).ToHashSet();
+
+            int playerId = 1;
+            while(existingIds.Contains(playerId))
+            {
+                playerId++;
+            }
+            return playerId;
+        }
+
+        /// <summary>
         /// Get a list of every existing category
         /// </summary>
         /// <returns></returns>
@@ -837,3 +855,4 @@ namespace TriviaBackend.Hubs
             await base.OnDisconnectedAsync(exception);
         }
     }
+}

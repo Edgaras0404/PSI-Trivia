@@ -295,14 +295,24 @@ function TriviaGame({ username, onLogout }) {
 
     const fetchGlobalLeaderboard = async () => {
         try {
+            console.log('Fetching global leaderboard...');
             const response = await fetch('https://localhost:5001/api/leaderboard/global?top=100');
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('Leaderboard data:', data);
                 setGlobalLeaderboard(data);
                 setShowGlobalLeaderboard(true);
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to fetch leaderboard:', response.status, errorText);
+                alert(`Failed to load leaderboard: ${response.status} ${response.statusText}`);
             }
         } catch (error) {
             console.error('Error fetching leaderboard:', error);
+            alert(`Error loading leaderboard: ${error.message}`);
         }
     };
 
@@ -339,6 +349,90 @@ function TriviaGame({ username, onLogout }) {
 
     if (showProfile) {
         return <Profile username={username} onBack={() => setShowProfile(false)} />;
+    }
+    if (showGlobalLeaderboard) {
+        return (
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={true}
+                    />
+                </div>
+                <div className="container">
+                    <div className="card" style={{ maxWidth: '700px' }}>
+                        <div className="header">
+                            <Trophy className="icon-large" />
+                            <h2>Global Leaderboard</h2>
+                            <p>Top players ranked by ELO rating</p>
+                        </div>
+
+                        <div className="results" style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                            {globalLeaderboard.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+                                    No players found
+                                </div>
+                            ) : (
+                                globalLeaderboard.map((player, index) => {
+                                    const medals = ['🥇', '🥈', '🥉'];
+                                    return (
+                                        <div
+                                            key={player.username || index}
+                                            className={`result-item ${index < 3 ? `rank-${index + 1}` : ''}`}
+                                            style={{
+                                                marginBottom: '10px',
+                                                background: index < 3 ? 'linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%)' : '#f9fafb'
+                                            }}
+                                        >
+                                            <div className="result-left">
+                                                <span style={{
+                                                    fontWeight: 'bold',
+                                                    minWidth: '30px',
+                                                    color: '#667eea'
+                                                }}>
+                                                    #{index + 1}
+                                                </span>
+                                                {index < 3 && <span className="medal">{medals[index]}</span>}
+                                                <div>
+                                                    <div className="player-name">
+                                                        {player.username}
+                                                        {player.username === username && (
+                                                            <span className="badge" style={{ marginLeft: '10px' }}>You</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="player-stats">
+                                                        {player.gamesPlayed} games played • {player.totalPoints} total points
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="final-score" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#667eea' }}>
+                                                    {player.elo}
+                                                </span>
+                                                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>ELO</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setShowGlobalLeaderboard(false)}
+                            className="button button-primary"
+                            style={{ marginTop: '20px' }}
+                        >
+                            <ArrowLeft className="icon" />
+                            Back to Menu
+                        </button>
+                    </div>
+                </div>
+            </>
+        );
     }
 
     if (gameState === 'menu') {

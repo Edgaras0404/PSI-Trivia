@@ -6,6 +6,7 @@ import './App.css';
 import LiquidChrome from './LiquidChrome';
 import TextPressure from './TextPressure';
 import Profile from './Profile';
+import Navbar from './Navbar';
 
 class GameConnection {
     constructor() {
@@ -58,7 +59,7 @@ class GameConnection {
     }
 }
 
-function TriviaGame({ username, onLogout, onEditor }) {
+function TriviaGame({ username, onLogout }) {
     const [connection] = useState(() => new GameConnection());
     const [connected, setConnected] = useState(false);
     const [gameState, setGameState] = useState('menu');
@@ -75,6 +76,11 @@ function TriviaGame({ username, onLogout, onEditor }) {
     const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
     const [showProfile, setShowProfile] = useState(false);
     const [isHost, setIsHost] = useState(false);
+
+    // local editor toggle inside TriviaGame
+    const [showEditorLocal, setShowEditorLocal] = useState(false);
+    const openEditor = () => setShowEditorLocal(true);
+    const closeEditor = () => setShowEditorLocal(false);
 
     // Lobby settings state
     const [gameSettings, setGameSettings] = useState({
@@ -329,6 +335,18 @@ function TriviaGame({ username, onLogout, onEditor }) {
         });
     };
 
+    if (showEditorLocal) {
+        return (
+            <Editor
+                onHome={() => { setShowEditorLocal(false); setGameState('menu'); }}
+                onEditor={() => setShowEditorLocal(false)}
+                onLogout={onLogout}
+                fetchGlobalLeaderboard={fetchGlobalLeaderboard}
+                onProfileClick={() => setShowProfile(true)}
+            />
+        );
+    }
+
     if (!connected) {
         return (
             <>
@@ -451,37 +469,12 @@ function TriviaGame({ username, onLogout, onEditor }) {
                     />
                 </div>
                 <div className="container">
-                    <div className="user-header">
-                        <button
-                            onClick={() => setShowProfile(true)}
-                            style={{
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                border: 'none',
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                transition: 'transform 0.2s'
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-                            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        >
-                            <User style={{ width: '20px', height: '20px', color: 'white' }} />
-                        </button>
-                        <div className="header-buttons">
-                            <button onClick={fetchGlobalLeaderboard} className="leaderboard-button">
-                                <Trophy className="icon" />
-                                Leaderboard
-                            </button>
-                            <button onClick={onLogout} className="logout-button">
-                                <LogOut className="icon" />
-                                Logout
-                            </button>
-                        </div>
-                    </div>
+                    <Navbar
+                        onProfileClick={() => setShowProfile(true)}
+                        onEditor={openEditor}
+                        onFetchGlobalLeaderboard={fetchGlobalLeaderboard}
+                        onLogout={onLogout}
+                    />
 
                     <div className="card">
                         <div className="header">
@@ -886,7 +879,6 @@ function TriviaGame({ username, onLogout, onEditor }) {
 export default function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [username, setUsername] = useState('');
-    const [inEditor, setInEditor] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -902,14 +894,6 @@ export default function App() {
         setUsername(user);
     };
 
-    const enterEditor = () => {
-        setInEditor(true);
-    }
-
-    if (inEditor) {
-        return <Editor />;
-    }
-
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('username');
@@ -921,5 +905,5 @@ export default function App() {
         return <Login onLoginSuccess={handleLoginSuccess} />;
     }
 
-    return <TriviaGame username={username} onLogout={handleLogout} onEditor={enterEditor} />;
+    return <TriviaGame username={username} onLogout={handleLogout} />;
 }

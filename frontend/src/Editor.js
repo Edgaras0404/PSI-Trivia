@@ -1,8 +1,8 @@
 // ...existing code...
 import React, { useState } from 'react';
 import './Editor.css';
-import App from './App';
 import LiquidChrome from './LiquidChrome';
+import Navbar from './Navbar';
 
 const DifficultyLevel = {
     Easy: "Easy",
@@ -27,7 +27,7 @@ const DifficultyMap = {
 };
 const DifficultyMapReverse = Object.fromEntries(Object.entries(DifficultyMap).map(([k, v]) => [v, k]));
 
-const Editor = () => {
+const Editor = ({ onHome, onEditor, onLogout, fetchGlobalLeaderboard, onProfileClick }) => {
     const [idInput, setIdInput] = useState('');
     const [current, setCurrent] = useState({
         id: '',
@@ -246,22 +246,13 @@ const Editor = () => {
 
     return (
         <>
-            <div className="user-header">
-                <div className="user-info">
-                    Welcome, <strong>Not working</strong>
-                </div>
-                <div className="header-buttons">
-                    <button className="navbar-button editor-button">
-                        Editor
-                    </button>
-                    <button className="navbar-button leaderboard-button" >
-                        Leaderboard
-                    </button>
-                    <button className="navbar-button logout-button" o>
-                        Logout
-                    </button>
-                </div>
-            </div>
+            <Navbar
+                onProfileClick={onProfileClick}
+                onHome={onHome}
+                onEditor={onEditor}
+                onFetchGlobalLeaderboard={fetchGlobalLeaderboard}
+                onLogout={onLogout}
+            />
 
             <div className="liquid-chrome-background">
                 <LiquidChrome

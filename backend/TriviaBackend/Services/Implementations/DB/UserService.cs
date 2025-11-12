@@ -2,11 +2,11 @@
 using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 
-namespace TriviaBackend.Services.DB
+namespace TriviaBackend.Services.Implementations.DB
 {
-    public class UserService(TriviaDbContext context)
+    public class UserService(ITriviaDbContext context)
     {
-        private readonly TriviaDbContext _context = context;
+        private readonly ITriviaDbContext _context = context;
 
         public async Task<BaseUser?> GetUserByIdAsync(string id) =>
             await _context.Users.FindAsync(id);

@@ -4,8 +4,9 @@ using TriviaBackend.Data;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
-using TriviaBackend.Services;
 using System.Collections.Concurrent;
+using TriviaBackend.Services.Implementations;
+using TriviaBackend.Services.Interfaces;
 
 namespace TriviaBackend.Hubs
 {
@@ -15,7 +16,7 @@ namespace TriviaBackend.Hubs
     /// <param name="questionService"></param>
     /// <param name="dbContext"></param>
     /// <param name="logger"></param>
-    public class GameHub(QuestionService questionService, TriviaDbContext dbContext, ILogger<ExceptionHandler> logger) : Hub
+    public class GameHub(IQuestionService questionService, ITriviaDbContext dbContext, ILogger<ExceptionHandler> logger) : Hub
     {
         private static readonly ConcurrentDictionary<string, GameEngineService> _activeGames = new();
 
@@ -28,9 +29,9 @@ namespace TriviaBackend.Hubs
         private static readonly ConcurrentDictionary<string, ConcurrentDictionary<int, string>> _gamePlayerUsernames = new();
 
         private static IHubContext<GameHub>? _staticHubContext;
-        private readonly QuestionService _questionService = questionService;
+        private readonly IQuestionService _questionService = questionService;
         private readonly ILogger<ExceptionHandler> _logger = logger;
-        private readonly TriviaDbContext _dbContext = dbContext;
+        private readonly ITriviaDbContext _dbContext = dbContext;
 
         public static void SetHubContext(IHubContext<GameHub> hubContext)
         {

@@ -5,7 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using TriviaBackend.Models.Entities;
-using TriviaBackend.Services.DB;
+using TriviaBackend.Services.Interfaces.DB;
 
 namespace TriviaBackend.Controllers
 {
@@ -16,7 +16,7 @@ namespace TriviaBackend.Controllers
     /// <param name="configuration"></param>
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController(UserService _DBService, IConfiguration configuration) : ControllerBase
+    public class AuthController(IUserService _DBService, IConfiguration configuration) : ControllerBase
     {
         /// <summary>
         /// Register a new player

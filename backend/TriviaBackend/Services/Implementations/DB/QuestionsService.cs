@@ -1,11 +1,11 @@
 ﻿using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 
-namespace TriviaBackend.Services.DB
+namespace TriviaBackend.Services.Implementations.DB
 {
-    public class QuestionsService(TriviaDbContext context)
+    public class QuestionsService(ITriviaDbContext context)
     {
-        private readonly TriviaDbContext _context = context;
+        private readonly ITriviaDbContext _context = context;
 
         public async Task<TriviaQuestion?> GetQuestionByIdAsync(int id) =>
             await _context.Questions.FindAsync(id);

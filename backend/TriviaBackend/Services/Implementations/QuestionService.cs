@@ -2,14 +2,14 @@ using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 
-namespace TriviaBackend.Services
+namespace TriviaBackend.Services.Implementations
 {
     /// <summary>
     /// Service for working with questions in the ongoing trivia match 
     /// </summary>
-    public class QuestionService(TriviaDbContext dbContext)
+    public class QuestionService(ITriviaDbContext dbContext)
     {
-        private readonly TriviaDbContext _dbContext = dbContext;
+        private readonly ITriviaDbContext _dbContext = dbContext;
 
         /// <summary>
         /// Get filtered questions

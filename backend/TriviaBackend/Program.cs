@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using TriviaBackend.Data;
 using TriviaBackend.Hubs;
-using TriviaBackend.Services;
-using TriviaBackend.Services.DB;
+using TriviaBackend.Services.Implementations;
+using TriviaBackend.Services.Implementations.DB;
 
 namespace TriviaBackend
 {
@@ -44,8 +44,8 @@ namespace TriviaBackend
             });
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            builder.Services.AddDbContext<TriviaDbContext>(options =>
-                options.UseNpgsql(connectionString));
+            builder.Services.AddDbContext<TriviaDbContext>(options => options.UseNpgsql(connectionString));
+            builder.Services.AddScoped<ITriviaDbContext>(provider => provider.GetRequiredService<TriviaDbContext>());
 
             builder.Services.AddScoped<QuestionService>();
             builder.Services.AddScoped<UserService>();

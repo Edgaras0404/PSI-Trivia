@@ -11,7 +11,7 @@
             <param name="_DBService"></param>
             <param name="configuration"></param>
         </member>
-        <member name="M:TriviaBackend.Controllers.AuthController.#ctor(TriviaBackend.Services.DB.UserService,Microsoft.Extensions.Configuration.IConfiguration)">
+        <member name="M:TriviaBackend.Controllers.AuthController.#ctor(TriviaBackend.Services.Interfaces.DB.IUserService,Microsoft.Extensions.Configuration.IConfiguration)">
             <summary>
             Controller for handling authentication and authorization
             </summary>
@@ -45,7 +45,7 @@
             </summary>
             <param name="_DBService"></param>
         </member>
-        <member name="M:TriviaBackend.Controllers.EditorController.#ctor(TriviaBackend.Services.DB.QuestionsService)">
+        <member name="M:TriviaBackend.Controllers.EditorController.#ctor(TriviaBackend.Services.Interfaces.DB.IQuestionsService)">
             <summary>
             Controller for managing trivia question editing
             </summary>
@@ -85,7 +85,7 @@
             <param name="dbContext"></param>
             <param name="logger"></param>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.QuestionService,TriviaBackend.Data.TriviaDbContext,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler})">
+        <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.Interfaces.IQuestionService,TriviaBackend.Data.ITriviaDbContext,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler})">
             <summary>
             Class for managing player activity and game progression in a match
             </summary>
@@ -152,7 +152,7 @@
             <param name="gameId"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.RevealAnswerAndProgress(System.String,System.Int32,TriviaBackend.Services.GameEngineService)">
+        <member name="M:TriviaBackend.Hubs.GameHub.RevealAnswerAndProgress(System.String,System.Int32,TriviaBackend.Services.Implementations.GameEngineService)">
             <summary>
             Send answer to all players and automatically go to next question after set amount of time
             </summary>
@@ -161,7 +161,7 @@
             <param name="gameEngine"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.EndGame(System.String,TriviaBackend.Services.GameEngineService)">
+        <member name="M:TriviaBackend.Hubs.GameHub.EndGame(System.String,TriviaBackend.Services.Implementations.GameEngineService)">
             <summary>
             End the ongoing match
             </summary>
@@ -186,11 +186,11 @@
             <seealso href="https://en.wikipedia.org/wiki/Elo_rating_system"/>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.GeneratePlayerId(TriviaBackend.Services.GameEngineService)">
+        <member name="M:TriviaBackend.Hubs.GameHub.GeneratePlayerId(TriviaBackend.Services.Implementations.GameEngineService)">
             <summary>
             Generate a unique Player ID for the game
             </summary>
-            <param name="GameEngine"></param>
+            <param name="gameEngine"></param>
             <returns></returns>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.GetAvailableCategories">
@@ -305,7 +305,7 @@
         <member name="M:TriviaBackend.Migrations.AddTotalPointsToPlayer.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
-        <member name="T:TriviaBackend.Services.GameEngineService">
+        <member name="T:TriviaBackend.Services.Implementations.GameEngineService">
             <summary>
             Service for processing actions and events in a match. Works together with GameHub
             <paramref name="questionService"/>
@@ -313,7 +313,7 @@
             <paramref name="gameId"/>
             </summary>
         </member>
-        <member name="M:TriviaBackend.Services.GameEngineService.#ctor(TriviaBackend.Services.QuestionService,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler},TriviaBackend.Models.Entities.GameSettings,System.String)">
+        <member name="M:TriviaBackend.Services.Implementations.GameEngineService.#ctor(TriviaBackend.Services.Interfaces.IQuestionService,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler},TriviaBackend.Models.Entities.GameSettings,System.String)">
             <summary>
             Service for processing actions and events in a match. Works together with GameHub
             <paramref name="questionService"/>
@@ -321,17 +321,17 @@
             <paramref name="gameId"/>
             </summary>
         </member>
-        <member name="T:TriviaBackend.Services.QuestionService">
+        <member name="T:TriviaBackend.Services.Implementations.QuestionService">
             <summary>
             Service for working with questions in the ongoing trivia match 
             </summary>
         </member>
-        <member name="M:TriviaBackend.Services.QuestionService.#ctor(TriviaBackend.Data.TriviaDbContext)">
+        <member name="M:TriviaBackend.Services.Implementations.QuestionService.#ctor(TriviaBackend.Data.ITriviaDbContext)">
             <summary>
             Service for working with questions in the ongoing trivia match 
             </summary>
         </member>
-        <member name="M:TriviaBackend.Services.QuestionService.GetQuestions(TriviaBackend.Models.Enums.QuestionCategory[],System.Nullable{TriviaBackend.Models.Enums.DifficultyLevel},System.Int32)">
+        <member name="M:TriviaBackend.Services.Implementations.QuestionService.GetQuestions(TriviaBackend.Models.Enums.QuestionCategory[],System.Nullable{TriviaBackend.Models.Enums.DifficultyLevel},System.Int32)">
             <summary>
             Get filtered questions
             </summary>
@@ -340,7 +340,7 @@
             <param name="count"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Services.QuestionService.GetQuestionCountByCategory">
+        <member name="M:TriviaBackend.Services.Implementations.QuestionService.GetQuestionCountByCategory">
             <summary>
             Get the amount of questions that have the category in question
             </summary>

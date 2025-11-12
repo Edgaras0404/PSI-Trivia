@@ -3,11 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using TriviaBackend.Data;
 using TriviaBackend.Exceptions;
-using TriviaBackend.Models;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Services;
-using static System.Net.WebRequestMethods;
 using System.Collections.Concurrent; // ADDED: Import for concurrent collections
 
 namespace TriviaBackend.Hubs

@@ -1,10 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Serilog;
-using System;
 using TriviaBackend.Data;
-using TriviaBackend.Exceptions;
 using TriviaBackend.Hubs;
 using TriviaBackend.Services;
 
@@ -52,6 +49,7 @@ namespace TriviaBackend
             builder.Services.AddScoped<QuestionService>();
             builder.Services.AddScoped<UserService>();
             builder.Services.AddScoped<PlayerService>();
+            builder.Services.AddScoped<DBQuestionsService>();
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

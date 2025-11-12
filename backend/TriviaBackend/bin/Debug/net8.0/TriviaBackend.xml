@@ -39,6 +39,18 @@
             <param name="request"></param>
             <returns></returns>
         </member>
+        <member name="T:TriviaBackend.Controllers.EditorController">
+            <summary>
+            Controller for managing trivia question editing
+            </summary>
+            <param name="_DBService"></param>
+        </member>
+        <member name="M:TriviaBackend.Controllers.EditorController.#ctor(TriviaBackend.Services.DBQuestionsService)">
+            <summary>
+            Controller for managing trivia question editing
+            </summary>
+            <param name="_DBService"></param>
+        </member>
         <member name="M:TriviaBackend.Controllers.LeaderboardController.GetGlobalLeaderboard(System.Int32)">
             <summary>
             Get global ranking of players by elo

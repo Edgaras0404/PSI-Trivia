@@ -4,6 +4,7 @@ using Serilog;
 using TriviaBackend.Data;
 using TriviaBackend.Hubs;
 using TriviaBackend.Services;
+using TriviaBackend.Services.DB;
 
 namespace TriviaBackend
 {
@@ -49,7 +50,7 @@ namespace TriviaBackend
             builder.Services.AddScoped<QuestionService>();
             builder.Services.AddScoped<UserService>();
             builder.Services.AddScoped<PlayerService>();
-            builder.Services.AddScoped<DBQuestionsService>();
+            builder.Services.AddScoped<QuestionsService>();
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

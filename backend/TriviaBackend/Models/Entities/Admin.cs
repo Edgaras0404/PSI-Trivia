@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Routing.Constraints;
-
-namespace TriviaBackend.Models.Entities
+﻿namespace TriviaBackend.Models.Entities
 {
     public class Admin : BaseUser
     {

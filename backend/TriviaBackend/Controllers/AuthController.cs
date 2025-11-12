@@ -5,7 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using TriviaBackend.Models.Entities;
-using TriviaBackend.Services;
+using TriviaBackend.Services.DB;
 
 namespace TriviaBackend.Controllers
 {

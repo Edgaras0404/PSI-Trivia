@@ -2,7 +2,7 @@
 using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 
-namespace TriviaBackend.Services
+namespace TriviaBackend.Services.DB
 {
     public class PlayerService(TriviaDbContext context)
     {

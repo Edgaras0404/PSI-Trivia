@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 using TriviaBackend.Data;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Services;
-using System.Collections.Concurrent; // ADDED: Import for concurrent collections
+using System.Collections.Concurrent;
 
 namespace TriviaBackend.Hubs
 {
@@ -30,7 +29,7 @@ namespace TriviaBackend.Hubs
 
         private static IHubContext<GameHub>? _staticHubContext;
         private readonly QuestionService _questionService = questionService;
-        private ILogger<ExceptionHandler> _logger = logger;
+        private readonly ILogger<ExceptionHandler> _logger = logger;
         private readonly TriviaDbContext _dbContext = dbContext;
 
         public static void SetHubContext(IHubContext<GameHub> hubContext)
@@ -781,7 +780,7 @@ namespace TriviaBackend.Hubs
         /// <summary>
         /// Generate a unique Player ID for the game
         /// </summary>
-        /// <param name="GameEngine"></param>
+        /// <param name="gameEngine"></param>
         /// <returns></returns>
         private static int GeneratePlayerId(GameEngineService gameEngine)
         {
@@ -789,7 +788,7 @@ namespace TriviaBackend.Hubs
             var existingIds = existingPlayers.Select(p => p.Id).ToHashSet();
 
             int playerId = 1;
-            while(existingIds.Contains(playerId))
+            while (existingIds.Contains(playerId))
             {
                 playerId++;
             }

@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
@@ -17,7 +14,7 @@ namespace TriviaBackend.Services
     public class GameEngineService(QuestionService questionService, ILogger<ExceptionHandler> logger, GameSettings settings = default, string? gameId = null)
     {
         private readonly QuestionService _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
-        private ILogger<ExceptionHandler> _logger = logger;
+        private readonly ILogger<ExceptionHandler> _logger = logger;
         private List<GamePlayer> _players = new List<GamePlayer>();
         private Queue<TriviaQuestion> _gameQuestions = new Queue<TriviaQuestion>();
         private Dictionary<int, List<GameAnswer>> _gameAnswers = new Dictionary<int, List<GameAnswer>>();

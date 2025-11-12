@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Entities;
 

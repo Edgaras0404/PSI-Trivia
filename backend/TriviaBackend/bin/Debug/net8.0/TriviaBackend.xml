@@ -11,7 +11,7 @@
             <param name="_DBService"></param>
             <param name="configuration"></param>
         </member>
-        <member name="M:TriviaBackend.Controllers.AuthController.#ctor(TriviaBackend.Services.UserService,Microsoft.Extensions.Configuration.IConfiguration)">
+        <member name="M:TriviaBackend.Controllers.AuthController.#ctor(TriviaBackend.Services.DB.UserService,Microsoft.Extensions.Configuration.IConfiguration)">
             <summary>
             Controller for handling authentication and authorization
             </summary>
@@ -45,7 +45,7 @@
             </summary>
             <param name="_DBService"></param>
         </member>
-        <member name="M:TriviaBackend.Controllers.EditorController.#ctor(TriviaBackend.Services.DBQuestionsService)">
+        <member name="M:TriviaBackend.Controllers.EditorController.#ctor(TriviaBackend.Services.DB.QuestionsService)">
             <summary>
             Controller for managing trivia question editing
             </summary>
@@ -326,32 +326,25 @@
             Service for working with questions in the ongoing trivia match 
             </summary>
         </member>
-        <member name="M:TriviaBackend.Services.QuestionService.LoadQuestionsFromFile(System.String)">
+        <member name="M:TriviaBackend.Services.QuestionService.#ctor(TriviaBackend.Data.TriviaDbContext)">
             <summary>
-            Populate _questionBank from a file
+            Service for working with questions in the ongoing trivia match 
             </summary>
-            <param name="filePath"></param>
-            <returns></returns>
         </member>
         <member name="M:TriviaBackend.Services.QuestionService.GetQuestions(TriviaBackend.Models.Enums.QuestionCategory[],System.Nullable{TriviaBackend.Models.Enums.DifficultyLevel},System.Int32)">
             <summary>
-            Get filtered questions from questionBank
+            Get filtered questions
             </summary>
             <param name="categories"></param>
             <param name="maxDifficulty"></param>
             <param name="count"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Services.QuestionService.AddQuestion(TriviaBackend.Models.Entities.TriviaQuestion)">
+        <member name="M:TriviaBackend.Services.QuestionService.GetQuestionCountByCategory">
             <summary>
-            Add question to the current question bank
+            Get the amount of questions that have the category in question
             </summary>
-            <param name="question"></param>
-        </member>
-        <member name="M:TriviaBackend.Services.QuestionService.LoadDBQuestions">
-            <summary>
-            Populate _questionBank from the database
-            </summary>
+            <returns></returns>
         </member>
     </members>
 </doc>

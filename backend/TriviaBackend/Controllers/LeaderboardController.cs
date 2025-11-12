@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
-using TriviaBackend.Services;
+using TriviaBackend.Services.DB;
 
 namespace TriviaBackend.Controllers
 {

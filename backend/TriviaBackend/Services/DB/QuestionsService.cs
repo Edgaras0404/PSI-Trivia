@@ -1,10 +1,9 @@
 ﻿using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
-using Microsoft.EntityFrameworkCore;
 
-namespace TriviaBackend.Services
+namespace TriviaBackend.Services.DB
 {
-    public class DBQuestionsService(TriviaDbContext context)
+    public class QuestionsService(TriviaDbContext context)
     {
         private readonly TriviaDbContext _context = context;
 

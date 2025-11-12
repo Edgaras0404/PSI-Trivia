@@ -131,12 +131,25 @@ const Editor = ({ onHome, onEditor, onLogout, fetchGlobalLeaderboard, onProfileC
         }
     };
 
-    // ...existing code...
-    // ...existing code...
+
+    const handleGet = async () => {
+        const id = parseId(idInput);
+        if (!id) { setMessage('Provide a numeric id'); return; }
+
+        setMessage('Fetching...');
+        const remote = await apiGetQuestion(id);
+        if (remote) {
+            setCurrent({ ...remote, answerOptions: ensureFourOptions(remote.answerOptions) });
+            setMessage(`Loaded question ${remote.id}`);
+        } else {
+            clearFields();
+        }
+    };
+
     const handleNew = async () => {
         if (!current) { setMessage('No data to create'); return; }
 
-        // Build DTO matching backend TriviaQuestionDTO
+        // DTO matching TriviaQuestionDTO.cs
         const payload = {
             QuestionText: String(current.questionText || ''),
             Answer1: String((current.answerOptions && current.answerOptions[0]) || ''),
@@ -157,58 +170,10 @@ const Editor = ({ onHome, onEditor, onLogout, fetchGlobalLeaderboard, onProfileC
 
         const resp = { ...payload, ...created };
 
-        const createdAnswers = [
-            resp.Answer1 ?? payload.Answer1,
-            resp.Answer2 ?? payload.Answer2,
-            resp.Answer3 ?? payload.Answer3,
-            resp.Answer4 ?? payload.Answer4,
-        ];
-
-        const createdCorrectIndex = Number(resp.CorrectAnswerIndex ?? payload.CorrectAnswerIndex);
-
-        const createdCategory = (resp.Category != null)
-            ? CategoryMapReverse[Number(resp.Category)]
-            : Object.keys(CategoryMap).find(k => CategoryMap[k] === payload.Category) ?? 'Geography';
-
-        const createdDifficulty = (resp.Difficulty != null)
-            ? DifficultyMapReverse[Number(resp.Difficulty)]
-            : Object.keys(DifficultyMap).find(k => DifficultyMap[k] === payload.Difficulty) ?? 'Easy';
-
-        setCurrent({
-            id: resp.id ?? current.id ?? '',
-            timeLimit: resp.TimeLimit ?? payload.TimeLimit,
-            questionText: resp.QuestionText ?? payload.QuestionText,
-            answerOptions: ensureFourOptions(createdAnswers),
-            correctAnswerIndex: Math.max(0, Math.min(3, createdCorrectIndex)),
-            category: createdCategory,
-            difficulty: createdDifficulty,
-        });
+        clearFields();
 
         if (resp.id) setIdInput(String(resp.id));
         setMessage(`Created question${resp.id ? ` ${resp.id}` : ''}`);
-    };
-
-
-    const handleGet = async () => {
-        const id = parseId(idInput);
-        if (!id) { setMessage('Provide a numeric id'); return; }
-
-        setMessage('Fetching...');
-        const remote = await apiGetQuestion(id);
-        if (remote) {
-            setCurrent({ ...remote, answerOptions: ensureFourOptions(remote.answerOptions) });
-            setMessage(`Loaded question ${remote.id}`);
-        } else {
-            setCurrent({
-                id: '',
-                timeLimit: 20,
-                questionText: '',
-                answerOptions: ['', '', '', ''],
-                correctAnswerIndex: 0,
-                category: "Null",
-                difficulty: "Null",
-            });
-        }
     };
 
     const handleDelete = async () => {
@@ -218,18 +183,22 @@ const Editor = ({ onHome, onEditor, onLogout, fetchGlobalLeaderboard, onProfileC
         setMessage('Deleting...');
         const ok = await apiDeleteQuestion(id);
         if (ok) {
-            setCurrent({
-                id: '',
-                timeLimit: 20,
-                questionText: '',
-                answerOptions: ['', '', '', ''],
-                correctAnswerIndex: 0,
-                category: "Null",
-                difficulty: "Null",
-            });
+            clearFields();
             setIdInput('');
             setMessage(`Deleted question ${id}`);
         }
+    };
+
+    const clearFields = () => {
+        setCurrent({
+            id: '',
+            timeLimit: 20,
+            questionText: '',
+            answerOptions: ['', '', '', ''],
+            correctAnswerIndex: 0,
+            category: "Null",
+            difficulty: "Null",
+        });
     };
 
     const updateCurrentField = (field, value) => {

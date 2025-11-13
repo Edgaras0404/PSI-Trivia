@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
+using TriviaBackend.Services.Interfaces.DB;
 
 namespace TriviaBackend.Services.Implementations.DB
 {
-    public class UserService(ITriviaDbContext context)
+    public class UserService(ITriviaDbContext context) : IUserService
     {
         private readonly ITriviaDbContext _context = context;
 

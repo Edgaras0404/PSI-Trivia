@@ -1,13 +1,14 @@
 using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
+using TriviaBackend.Services.Interfaces;
 
 namespace TriviaBackend.Services.Implementations
 {
     /// <summary>
     /// Service for working with questions in the ongoing trivia match 
     /// </summary>
-    public class QuestionService(ITriviaDbContext dbContext)
+    public class QuestionService(ITriviaDbContext dbContext) : IQuestionService
     {
         private readonly ITriviaDbContext _dbContext = dbContext;
 

@@ -1,9 +1,10 @@
 ﻿using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
+using TriviaBackend.Services.Interfaces.DB;
 
 namespace TriviaBackend.Services.Implementations.DB
 {
-    public class QuestionsService(ITriviaDbContext context)
+    public class QuestionsService(ITriviaDbContext context) : IQuestionsService
     {
         private readonly ITriviaDbContext _context = context;
 

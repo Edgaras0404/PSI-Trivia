@@ -4,9 +4,9 @@ using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Services.Implementations;
 using TriviaBackend.Data;
+using TriviaBackend;
 
-
-namespace TriviaBackend.Tests.Unit
+namespace TriviaBackendTests.Unit
 {
     [TestFixture]
     public class QuestionServiceTests

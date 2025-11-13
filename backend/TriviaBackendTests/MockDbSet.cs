@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Moq;
 
-namespace TriviaBackend.Tests
+namespace TriviaBackendTests
 {
     public static class MockDbSet
     {

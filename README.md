@@ -1,5 +1,7 @@
 # PSI-Trivia
 
+Run tests with ```dotnet test --logger "trx;LogFileName=TestResults.trx"```
+
 # Backend Services Architecture
 
 ## Core Backend Services

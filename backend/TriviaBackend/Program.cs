@@ -5,6 +5,8 @@ using TriviaBackend.Data;
 using TriviaBackend.Hubs;
 using TriviaBackend.Services.Implementations;
 using TriviaBackend.Services.Implementations.DB;
+using TriviaBackend.Services.Interfaces;
+using TriviaBackend.Services.Interfaces.DB;
 
 namespace TriviaBackend
 {
@@ -47,10 +49,10 @@ namespace TriviaBackend
             builder.Services.AddDbContext<TriviaDbContext>(options => options.UseNpgsql(connectionString));
             builder.Services.AddScoped<ITriviaDbContext>(provider => provider.GetRequiredService<TriviaDbContext>());
 
-            builder.Services.AddScoped<QuestionService>();
-            builder.Services.AddScoped<UserService>();
-            builder.Services.AddScoped<PlayerService>();
-            builder.Services.AddScoped<QuestionsService>();
+            builder.Services.AddScoped<IQuestionService, QuestionService>();
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IPlayerService, PlayerService>();
+            builder.Services.AddScoped<IQuestionsService, QuestionsService>();
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

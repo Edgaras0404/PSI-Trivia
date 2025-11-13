@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Models.Entities;
-using TriviaBackend.Services;
+using TriviaBackend.Services.Interfaces.DB;
 
 namespace TriviaBackend.Controllers
 {
@@ -10,7 +10,7 @@ namespace TriviaBackend.Controllers
     /// <param name="_DBService"></param>
     [Route("api/[controller]")]
     [ApiController]
-    public class EditorController(DBQuestionsService _DBService) : ControllerBase
+    public class EditorController(IQuestionsService _DBService) : ControllerBase
     {
         [HttpGet("getquestion/{id}")]
         public async Task<ActionResult<TriviaQuestion>> GetQuestion(int id)

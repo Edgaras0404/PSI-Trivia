@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
-using TriviaBackend.Services;
+using TriviaBackend.Services.Interfaces.DB;
 
 namespace TriviaBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LeaderboardController(PlayerService _PlayerService, ILogger<ExceptionHandler> _logger) : ControllerBase
+    public class LeaderboardController(IPlayerService _PlayerService, ILogger<ExceptionHandler> _logger) : ControllerBase
     {
         /// <summary>
         /// Get global ranking of players by elo

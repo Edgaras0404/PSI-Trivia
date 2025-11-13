@@ -1,12 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Models.Records;
+using TriviaBackend.Services.Interfaces;
 
-namespace TriviaBackend.Services
+namespace TriviaBackend.Services.Implementations
 {
     /// <summary>
     /// Service for processing actions and events in a match. Works together with GameHub
@@ -14,10 +12,10 @@ namespace TriviaBackend.Services
     /// <paramref name="settings"/>
     /// <paramref name="gameId"/>
     /// </summary>
-    public class GameEngineService(QuestionService questionService, ILogger<ExceptionHandler> logger, GameSettings settings = default, string? gameId = null)
+    public class GameEngineService(IQuestionService questionService, ILogger<ExceptionHandler> logger, GameSettings settings = default, string? gameId = null)
     {
-        private readonly QuestionService _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
-        private ILogger<ExceptionHandler> _logger = logger;
+        private readonly IQuestionService _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
+        private readonly ILogger<ExceptionHandler> _logger = logger;
         private List<GamePlayer> _players = new List<GamePlayer>();
         private Queue<TriviaQuestion> _gameQuestions = new Queue<TriviaQuestion>();
         private Dictionary<int, List<GameAnswer>> _gameAnswers = new Dictionary<int, List<GameAnswer>>();

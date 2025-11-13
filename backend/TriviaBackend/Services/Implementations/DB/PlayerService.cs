@@ -2,11 +2,11 @@
 using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 
-namespace TriviaBackend.Services
+namespace TriviaBackend.Services.Implementations.DB
 {
-    public class PlayerService(TriviaDbContext context)
+    public class PlayerService(ITriviaDbContext context)
     {
-        private readonly TriviaDbContext _context = context;
+        private readonly ITriviaDbContext _context = context;
 
         public async Task<List<Player>> GetAllPlayersAsync() =>
             await _context.Users.OfType<Player>().ToListAsync();

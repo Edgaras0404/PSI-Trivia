@@ -12,19 +12,19 @@ namespace TriviaBackendTests.Integration
         [Test]
         public async Task AddQuestion_ThenRetrieve_ShouldReturnSame()
         {
-            //var options = new DbContextOptionsBuilder<TriviaDbContext>()
-            //    .UseInMemoryDatabase("TestDb")
-            //    .Options;
+            var options = new DbContextOptionsBuilder<TriviaDbContext>()
+                .UseInMemoryDatabase("TestDb")
+                .Options;
 
-            //using var context = new TriviaDbContext(options);
-            //var service = new QuestionService(context);
+            using var context = new TriviaDbContext(options);
+            var service = new QuestionService(context);
 
-            //context.Questions.Add(new TriviaQuestion { Id = 1, Category = QuestionCategory.History });
-            //await context.SaveChangesAsync();
+            context.Questions.Add(new TriviaQuestion { Id = 1, Category = QuestionCategory.History });
+            await context.SaveChangesAsync();
 
-            //var result = service.GetQuestionCountByCategory();
+            var result = service.GetQuestionCountByCategory();
 
-            //Assert.That(result[QuestionCategory.History], Is.EqualTo(1));
+            Assert.That(result[QuestionCategory.History], Is.EqualTo(1));
             Assert.That(true);
         }
     }

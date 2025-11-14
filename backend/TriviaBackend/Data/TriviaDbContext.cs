@@ -7,14 +7,10 @@ namespace TriviaBackend.Data
     /// <summary>
     /// Class for managing the database schema
     /// </summary>
-    public class TriviaDbContext : DbContext, ITriviaDbContext
+    public class TriviaDbContext(DbContextOptions<TriviaDbContext> options) : DbContext(options), ITriviaDbContext
     {
-        public TriviaDbContext(DbContextOptions<TriviaDbContext> options) : base(options)
-        {
-            Database.EnsureCreated();
-        }
-        public required DbSet<TriviaQuestion> Questions { get; set; }
-        public required DbSet<BaseUser> Users { get; set; }
+        public DbSet<TriviaQuestion> Questions { get; set; }
+        public DbSet<BaseUser> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

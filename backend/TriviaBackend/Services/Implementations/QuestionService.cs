@@ -2,15 +2,21 @@ using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace TriviaBackend.Services.Implementations
 {
     /// <summary>
     /// Service for working with questions in the ongoing trivia match 
     /// </summary>
-    public class QuestionService(ITriviaDbContext dbContext) : IQuestionService
+    public class QuestionService : IQuestionService
     {
-        private readonly ITriviaDbContext _dbContext = dbContext;
+        private readonly IServiceProvider _serviceProvider;
+
+        public QuestionService(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
 
         /// <summary>
         /// Get filtered questions
@@ -23,7 +29,10 @@ namespace TriviaBackend.Services.Implementations
                                                DifficultyLevel? maxDifficulty = null,
                                                int count = 6)
         {
-            var query = _dbContext.Questions.AsEnumerable();
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ITriviaDbContext>();
+
+            var query = dbContext.Questions.AsEnumerable();
 
             if (categories != null && categories.Length > 0)
             {
@@ -46,13 +55,17 @@ namespace TriviaBackend.Services.Implementations
         /// <returns></returns>
         public Dictionary<QuestionCategory, int> GetQuestionCountByCategory()
         {
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ITriviaDbContext>();
+
             var categoryCounts = new Dictionary<QuestionCategory, int>();
 
             foreach (var category in Enum.GetValues<QuestionCategory>())
             {
                 categoryCounts[category] = 0;
             }
-            var query = _dbContext.Questions.ToList();
+
+            var query = dbContext.Questions.ToList();
 
             foreach (var question in query)
             {

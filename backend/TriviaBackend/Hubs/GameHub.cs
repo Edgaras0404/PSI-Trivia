@@ -14,9 +14,6 @@ namespace TriviaBackend.Hubs
     /// <summary>
     /// Class for managing player activity and game progression in a match
     /// </summary>
-    /// <param name="questionService"></param>
-    /// <param name="dbContext"></param>
-    /// <param name="logger"></param>
     public class GameHub : Hub
     {
         private static readonly ConcurrentDictionary<string, GameEngineService> _activeGames = new();

@@ -4,8 +4,6 @@ using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Services.Implementations;
 using TriviaBackend.Data;
-using TriviaBackend;
-using System;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace TriviaBackendTests.Unit

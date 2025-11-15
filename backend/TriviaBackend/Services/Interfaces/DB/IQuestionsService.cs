@@ -6,7 +6,7 @@ namespace TriviaBackend.Services.Interfaces.DB
     {
         Task<TriviaQuestion?> GetQuestionByIdAsync(int id);
 
-        Task AddQuestionAsync(TriviaQuestionDTO question);
+        Task<TriviaQuestion> AddQuestionAsync(TriviaQuestionDTO question);
 
         Task DeleteQuestionByIdAsync(int id);
 

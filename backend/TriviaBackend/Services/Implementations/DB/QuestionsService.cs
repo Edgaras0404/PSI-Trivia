@@ -11,9 +11,9 @@ namespace TriviaBackend.Services.Implementations.DB
         public async Task<TriviaQuestion?> GetQuestionByIdAsync(int id) =>
             await _context.Questions.FindAsync(id);
 
-        public async Task AddQuestionAsync(TriviaQuestionDTO question)
+        public async Task<TriviaQuestion> AddQuestionAsync(TriviaQuestionDTO question)
         {
-            _context.Questions.Add(new TriviaQuestion
+            var entity = new TriviaQuestion
             {
                 QuestionText = question.QuestionText,
                 CorrectAnswerIndex = question.CorrectAnswerIndex,
@@ -21,8 +21,12 @@ namespace TriviaBackend.Services.Implementations.DB
                 Category = question.Category,
                 Difficulty = question.Difficulty,
                 TimeLimit = question.TimeLimit
-            });
+            };
+
+            _context.Questions.Add(entity);
             await _context.SaveChangesAsync();
+
+            return entity;
         }
 
         public async Task DeleteQuestionByIdAsync(int id)

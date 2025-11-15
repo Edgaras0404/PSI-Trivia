@@ -55,14 +55,15 @@ namespace TriviaBackend
                 });
             });
 
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            if (!builder.Environment.IsEnvironment("Test"))
+            {
+                var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+                builder.Services.AddDbContext<TriviaDbContext>(options =>
+                    options.UseNpgsql(connectionString));
 
-            // Register DbContextFactory as SINGLETON with pooling
-            builder.Services.AddDbContext<TriviaDbContext>(options =>
-               options.UseNpgsql(connectionString));
-
-            builder.Services.AddScoped<ITriviaDbContext>(provider =>
-                provider.GetRequiredService<TriviaDbContext>());
+                builder.Services.AddScoped<ITriviaDbContext>(provider =>
+                    provider.GetRequiredService<TriviaDbContext>());
+            }
 
             // Changed to Transient
             builder.Services.AddTransient<IQuestionService, QuestionService>();
@@ -76,6 +77,13 @@ namespace TriviaBackend
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
+
+            if (!app.Environment.IsEnvironment("Test"))
+            {
+                using var scope = app.Services.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<TriviaDbContext>();
+                db.Database.EnsureCreated();
+            }
 
             var hubContext = app.Services.GetRequiredService<IHubContext<GameHub>>();
             GameHub.SetHubContext(hubContext);

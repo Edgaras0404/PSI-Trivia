@@ -8,35 +8,54 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace TriviaBackendTests.Integration
 {
+    [TestFixture]
     public class QuestionsDbTests
     {
-        [Test]
-        public async Task AddQuestion_ThenRetrieve_ShouldReturnSame()
+        private ServiceProvider _provider = null!;
+        private IServiceScope _scope = null!;
+        private TriviaDbContext _context = null!;
+        private QuestionService _service = null!;
+
+        [SetUp]
+        public void Setup()
         {
             var services = new ServiceCollection();
 
+            // Unique DB name for each test
+            var dbName = "TestDb_" + Guid.NewGuid();
             services.AddDbContext<TriviaDbContext>(options =>
-                options.UseInMemoryDatabase("TestDb"));
+                options.UseInMemoryDatabase(dbName));
 
             services.AddScoped<ITriviaDbContext, TriviaDbContext>();
             services.AddScoped<QuestionService>();
 
-            var provider = services.BuildServiceProvider();
+            _provider = services.BuildServiceProvider();
 
-            using var scope = provider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<TriviaDbContext>();
+            _scope = _provider.CreateScope();
+            _context = _scope.ServiceProvider.GetRequiredService<TriviaDbContext>();
+            _service = _scope.ServiceProvider.GetRequiredService<QuestionService>();
+        }
 
-            context.Questions.Add(
+        [TearDown]
+        public void TearDown()
+        {
+            _context.Dispose();
+            _scope.Dispose();
+            _provider.Dispose();
+        }
+
+        [Test]
+        public async Task AddQuestion_ThenRetrieve_ShouldReturnSame()
+        {
+            _context.Questions.Add(
                 new TriviaQuestion { Id = 1, Category = QuestionCategory.History }
             );
 
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-            var service = scope.ServiceProvider.GetRequiredService<QuestionService>();
-            var result = service.GetQuestionCountByCategory();
+            var result = _service.GetQuestionCountByCategory();
 
             Assert.That(result[QuestionCategory.History], Is.EqualTo(1));
         }
-
     }
 }

@@ -26,15 +26,33 @@ namespace TriviaBackend.Controllers
         }
 
         [HttpPost("addquestion")]
-        public async Task AddQuestion(TriviaQuestionDTO request)
+        public async Task<ActionResult<string>> AddQuestion(TriviaQuestionDTO request)
         {
+            if (request.CorrectAnswerIndex < 0 || request.CorrectAnswerIndex > 3)
+            {
+                return BadRequest("CorrectAnswerIndex must be between 0 and 3");
+            }
+            if (request.TimeLimit < 5 || request.TimeLimit > 1000)
+            {
+                return BadRequest("Time limit must be between 5 and 1000");
+            }
             await _DBService.AddQuestionAsync(request);
+
+            return Ok(request);
         }
 
         [HttpDelete("deletequestion/{id}")]
-        public async Task DeleteQuestion(int id)
+        public async Task<ActionResult<string>> DeleteQuestion(int id)
         {
+            var question = await _DBService.GetQuestionByIdAsync(id);
+
+            if (question == null)
+            {
+                return NotFound();
+            }
+
             await _DBService.DeleteQuestionByIdAsync(id);
+            return NoContent();
         }
     }
 }

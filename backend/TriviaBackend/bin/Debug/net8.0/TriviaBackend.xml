@@ -77,6 +77,11 @@
             Class for managing the database schema
             </summary>
         </member>
+        <member name="M:TriviaBackend.Data.TriviaDbContext.#ctor(Microsoft.EntityFrameworkCore.DbContextOptions{TriviaBackend.Data.TriviaDbContext})">
+            <summary>
+            Class for managing the database schema
+            </summary>
+        </member>
         <member name="T:TriviaBackend.Hubs.GameHub">
             <summary>
             Class for managing player activity and game progression in a match

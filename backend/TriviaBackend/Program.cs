@@ -70,6 +70,8 @@ namespace TriviaBackend
             builder.Services.AddScoped<IPlayerService, PlayerService>();
             builder.Services.AddScoped<IQuestionsService, QuestionsService>();
 
+            builder.Services.AddTransient(typeof(IStatisticsCalculator<,>), typeof(StatisticsCalculator<,>));
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 

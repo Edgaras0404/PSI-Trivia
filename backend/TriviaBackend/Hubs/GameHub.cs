@@ -7,6 +7,7 @@ using TriviaBackend.Models.Enums;
 using System.Collections.Concurrent;
 using TriviaBackend.Services.Implementations;
 using TriviaBackend.Services.Interfaces;
+using System.Net.NetworkInformation;
 
 namespace TriviaBackend.Hubs
 {
@@ -583,6 +584,42 @@ namespace TriviaBackend.Hubs
                 }
             });
         }
+
+        /// <summary>
+        /// Get game stats using generic calculator
+        /// </summary>
+        /// <param name="gameId"></param>
+        /// <returns></returns>
+        public async Task GetGameStatistics(string gameId)
+        {
+            if (!_activeGames.TryGetValue(gameId, out var gameEngine))
+            {
+                await Clients.Caller.SendAsync("Error", "Game not found");
+                return;
+            }
+
+            var statsCalculator = new StatisticsCalculator<GamePlayer, int>();
+            var players = gameEngine.GetPlayers();
+
+            var avgScore = statsCalculator.CalculateAverage(players, p => p.CurrentGameScore);
+            var totalScore = statsCalculator.CalculateTotal(players, p => p.CurrentGameScore); // Fixed
+            var topPlayer = statsCalculator.FindTopPerformer(players, p => p.CurrentGameScore);
+            var top3Players = statsCalculator.GetTopN(players, p => p.CurrentGameScore, 3);
+
+            var doubleStatsCalculator = new StatisticsCalculator<GamePlayer, double>();
+            var avgCorrectAnswers = doubleStatsCalculator.CalculateAverage(players, p => (double)p.CorrectAnswersInGame);
+
+            await Clients.Caller.SendAsync("GameStatistics", new
+            {
+                averageScore = avgScore,
+                totalScore = totalScore,
+                topPlayer = topPlayer?.Name,
+                topPlayerScore = topPlayer?.CurrentGameScore,
+                top3Players = top3Players.Select(p => new { p.Name, p.CurrentGameScore }),
+                averageCorrectAnswers = avgCorrectAnswers
+            });
+        }
+
 
         /// <summary>
         /// Send answer to all players and automatically go to next question after set amount of time

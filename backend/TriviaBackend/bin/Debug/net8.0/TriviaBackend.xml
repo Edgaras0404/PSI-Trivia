@@ -144,6 +144,13 @@
             <param name="gameId"></param>
             <returns></returns>
         </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.GetGameStatistics(System.String)">
+            <summary>
+            Get game stats using generic calculator
+            </summary>
+            <param name="gameId"></param>
+            <returns></returns>
+        </member>
         <member name="M:TriviaBackend.Hubs.GameHub.RevealAnswerAndProgress(System.String,System.Int32,TriviaBackend.Services.Implementations.GameEngineService)">
             <summary>
             Send answer to all players and automatically go to next question after set amount of time
@@ -321,6 +328,38 @@
             Get the amount of questions that have the category in question
             </summary>
             <returns></returns>
+        </member>
+        <member name="T:TriviaBackend.Services.Implementations.StatisticsCalculator`2">
+            <summary>
+             Generic statistics calculator implementation
+            </summary>
+            <typeparam name="T">Entity type that must inherit from Gameplayer</typeparam>
+            <typeparam name="TResult">Result type that must be a value type (struct)</typeparam>
+        </member>
+        <member name="M:TriviaBackend.Services.Implementations.StatisticsCalculator`2.CalculateAverage(System.Collections.Generic.List{`0},System.Func{`0,`1})">
+            <summary>
+            Calculate specific average value based on selector function
+            </summary>
+        </member>
+        <member name="M:TriviaBackend.Services.Implementations.StatisticsCalculator`2.CalculateTotal(System.Collections.Generic.List{`0},System.Func{`0,`1})">
+            <summary>
+            Calculate total sum of a specific statistic 
+            </summary>
+        </member>
+        <member name="M:TriviaBackend.Services.Implementations.StatisticsCalculator`2.FindTopPerformer(System.Collections.Generic.List{`0},System.Func{`0,`1})">
+            <summary>
+            Find a player with the highest value based on a specific statistic
+            </summary>
+        </member>
+        <member name="M:TriviaBackend.Services.Implementations.StatisticsCalculator`2.GetTopN(System.Collections.Generic.List{`0},System.Func{`0,`1},System.Int32)">
+            <summary>
+            Get top N players based on a specific statistic
+            </summary>
+        </member>
+        <member name="M:TriviaBackend.Services.Implementations.StatisticsCalculator`2.GetPlayerStatistics(`0)">
+            <summary>
+            Get comprehensive statistics for a single player
+            </summary>
         </member>
     </members>
 </doc>

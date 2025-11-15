@@ -4,6 +4,7 @@ using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Services.Implementations;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace TriviaBackendTests.Integration
 {
@@ -12,20 +13,30 @@ namespace TriviaBackendTests.Integration
         [Test]
         public async Task AddQuestion_ThenRetrieve_ShouldReturnSame()
         {
-            var options = new DbContextOptionsBuilder<TriviaDbContext>()
-                .UseInMemoryDatabase("TestDb")
-                .Options;
+            var services = new ServiceCollection();
 
-            using var context = new TriviaDbContext(options);
-            var service = new QuestionService(context);
+            services.AddDbContext<TriviaDbContext>(options =>
+                options.UseInMemoryDatabase("TestDb"));
 
-            context.Questions.Add(new TriviaQuestion { Id = 1, Category = QuestionCategory.History });
+            services.AddScoped<ITriviaDbContext, TriviaDbContext>();
+            services.AddScoped<QuestionService>();
+
+            var provider = services.BuildServiceProvider();
+
+            using var scope = provider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<TriviaDbContext>();
+
+            context.Questions.Add(
+                new TriviaQuestion { Id = 1, Category = QuestionCategory.History }
+            );
+
             await context.SaveChangesAsync();
 
+            var service = scope.ServiceProvider.GetRequiredService<QuestionService>();
             var result = service.GetQuestionCountByCategory();
 
             Assert.That(result[QuestionCategory.History], Is.EqualTo(1));
-            Assert.That(true);
         }
+
     }
 }

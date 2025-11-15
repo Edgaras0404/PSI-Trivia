@@ -16,6 +16,11 @@ namespace TriviaBackend
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Temporarily add detailed console logging
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+            builder.Logging.SetMinimumLevel(LogLevel.Debug);
+
             //log only message with time
             builder.Host.UseSerilog((context, loggerConfig) =>
                 loggerConfig
@@ -29,7 +34,12 @@ namespace TriviaBackend
             );
 
             builder.Services.AddControllers();
-            builder.Services.AddSignalR();
+
+            // Add detailed errors to SignalR
+            builder.Services.AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;
+            });
 
             builder.Services.AddCors(options =>
             {
@@ -46,10 +56,16 @@ namespace TriviaBackend
             });
 
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-            builder.Services.AddDbContext<TriviaDbContext>(options => options.UseNpgsql(connectionString));
-            builder.Services.AddScoped<ITriviaDbContext>(provider => provider.GetRequiredService<TriviaDbContext>());
 
-            builder.Services.AddScoped<IQuestionService, QuestionService>();
+            // Register DbContextFactory as SINGLETON with pooling
+            builder.Services.AddDbContext<TriviaDbContext>(options =>
+               options.UseNpgsql(connectionString));
+
+            builder.Services.AddScoped<ITriviaDbContext>(provider =>
+                provider.GetRequiredService<TriviaDbContext>());
+
+            // Changed to Transient
+            builder.Services.AddTransient<IQuestionService, QuestionService>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IPlayerService, PlayerService>();
             builder.Services.AddScoped<IQuestionsService, QuestionsService>();
@@ -62,13 +78,15 @@ namespace TriviaBackend
             var hubContext = app.Services.GetRequiredService<IHubContext<GameHub>>();
             GameHub.SetHubContext(hubContext);
 
+            GameHub.SetServiceProvider(app.Services);
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection(); // Enforce HTTPS redirection from HTTP (5000 to HTTPS 5001)
+            app.UseHttpsRedirection();
 
             app.UseCors("AllowAll");
             app.UseAuthorization();

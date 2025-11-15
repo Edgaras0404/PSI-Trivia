@@ -16,7 +16,7 @@ namespace TriviaBackend.Hubs
     /// <param name="questionService"></param>
     /// <param name="dbContext"></param>
     /// <param name="logger"></param>
-    public class GameHub(IQuestionService questionService, ITriviaDbContext dbContext, ILogger<ExceptionHandler> logger) : Hub
+    public class GameHub : Hub
     {
         private static readonly ConcurrentDictionary<string, GameEngineService> _activeGames = new();
 
@@ -29,13 +29,26 @@ namespace TriviaBackend.Hubs
         private static readonly ConcurrentDictionary<string, ConcurrentDictionary<int, string>> _gamePlayerUsernames = new();
 
         private static IHubContext<GameHub>? _staticHubContext;
-        private readonly IQuestionService _questionService = questionService;
-        private readonly ILogger<ExceptionHandler> _logger = logger;
-        private readonly ITriviaDbContext _dbContext = dbContext;
+        private static IServiceProvider? _staticServiceProvider;
+
+        private readonly ILogger<ExceptionHandler> _logger;
+        private readonly IServiceProvider _serviceProvider;
+
+        public GameHub(IServiceProvider serviceProvider,
+            ILogger<ExceptionHandler> logger)
+        {
+            _serviceProvider = serviceProvider;
+            _logger = logger;
+        }
 
         public static void SetHubContext(IHubContext<GameHub> hubContext)
         {
             _staticHubContext = hubContext;
+        }
+
+        public static void SetServiceProvider(IServiceProvider serviceProvider)
+        {
+            _staticServiceProvider = serviceProvider;
         }
 
         /// <summary>
@@ -58,7 +71,7 @@ namespace TriviaBackend.Hubs
                 MaxDifficulty = DifficultyLevel.Hard
             };
 
-            var gameEngine = new GameEngineService(_questionService, _logger, setting, gameId);
+            var gameEngine = new GameEngineService(_staticServiceProvider!, _logger, setting, gameId);
 
             if (!_activeGames.TryAdd(gameId, gameEngine))
             {
@@ -159,7 +172,7 @@ namespace TriviaBackend.Hubs
                 }
 
                 // Create new game engine with updated settings
-                var newGameEngine = new GameEngineService(_questionService, _logger, currentSettings, gameId);
+                var newGameEngine = new GameEngineService(_staticServiceProvider!, _logger, currentSettings, gameId);
 
                 // Re-add all existing players
                 foreach (var player in currentPlayers)
@@ -366,7 +379,9 @@ namespace TriviaBackend.Hubs
                 Console.WriteLine($"Game found. Status: {gameEngine.Status}, Players: {gameEngine.GetPlayers().Count}");
                 _logger.LogInformation($"Game found. Status: {gameEngine.Status}, Players: {gameEngine.GetPlayers().Count}");
 
-                var allCategories = _questionService.GetQuestionCountByCategory();
+                using var scope = _serviceProvider.CreateScope();
+                var questionService = scope.ServiceProvider.GetRequiredService<IQuestionService>();
+                var allCategories = questionService.GetQuestionCountByCategory();
                 _logger.LogInformation($"Total questions available: {allCategories.Values.Sum()}");
 
                 QuestionCategory[]? selectedCategories = null;
@@ -698,6 +713,9 @@ namespace TriviaBackend.Hubs
         /// <returns></returns>
         private async Task UpdatePlayerStats(string gameId, List<GamePlayer> finalLeaderboard)
         {
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ITriviaDbContext>();
+
             try
             {
                 _logger.LogInformation($"=== UpdatePlayerStats called for game {gameId} ===");
@@ -726,7 +744,7 @@ namespace TriviaBackend.Hubs
 
                     _logger.LogInformation($"Looking up username: {username}");
 
-                    var player = await _dbContext.Users
+                    var player = await dbContext.Users
                         .OfType<Player>()
                         .FirstOrDefaultAsync(p => p.Username == username);
 
@@ -748,7 +766,7 @@ namespace TriviaBackend.Hubs
                     }
                 }
 
-                var changes = await _dbContext.SaveChangesAsync();
+                var changes = await dbContext.SaveChangesAsync();
                 _logger.LogInformation($"Saved {changes} changes to database for game {gameId}");
             }
             catch (Exception ex)
@@ -802,7 +820,9 @@ namespace TriviaBackend.Hubs
         /// <returns></returns>
         public async Task GetAvailableCategories()
         {
-            var categories = _questionService.GetQuestionCountByCategory();
+            using var scope = _serviceProvider.CreateScope();
+            var questionService = scope.ServiceProvider.GetRequiredService<IQuestionService>();
+            var categories = questionService.GetQuestionCountByCategory();
             await Clients.Caller.SendAsync("AvailableCategories",
                 categories.Select(c => new { category = c.Key.ToString(), count = c.Value }));
         }

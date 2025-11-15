@@ -85,14 +85,6 @@
             <param name="dbContext"></param>
             <param name="logger"></param>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.#ctor(TriviaBackend.Services.Interfaces.IQuestionService,TriviaBackend.Data.ITriviaDbContext,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler})">
-            <summary>
-            Class for managing player activity and game progression in a match
-            </summary>
-            <param name="questionService"></param>
-            <param name="dbContext"></param>
-            <param name="logger"></param>
-        </member>
         <member name="M:TriviaBackend.Hubs.GameHub.CreateGame(System.String)">
             <summary>
             Create a new game with random Id and initialize in lobby state
@@ -308,25 +300,9 @@
         <member name="T:TriviaBackend.Services.Implementations.GameEngineService">
             <summary>
             Service for processing actions and events in a match. Works together with GameHub
-            <paramref name="questionService"/>
-            <paramref name="settings"/>
-            <paramref name="gameId"/>
-            </summary>
-        </member>
-        <member name="M:TriviaBackend.Services.Implementations.GameEngineService.#ctor(TriviaBackend.Services.Interfaces.IQuestionService,Microsoft.Extensions.Logging.ILogger{TriviaBackend.Exceptions.ExceptionHandler},TriviaBackend.Models.Entities.GameSettings,System.String)">
-            <summary>
-            Service for processing actions and events in a match. Works together with GameHub
-            <paramref name="questionService"/>
-            <paramref name="settings"/>
-            <paramref name="gameId"/>
             </summary>
         </member>
         <member name="T:TriviaBackend.Services.Implementations.QuestionService">
-            <summary>
-            Service for working with questions in the ongoing trivia match 
-            </summary>
-        </member>
-        <member name="M:TriviaBackend.Services.Implementations.QuestionService.#ctor(TriviaBackend.Data.ITriviaDbContext)">
             <summary>
             Service for working with questions in the ongoing trivia match 
             </summary>

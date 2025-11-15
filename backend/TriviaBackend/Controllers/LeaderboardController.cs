@@ -2,6 +2,8 @@
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services.Interfaces.DB;
+using TriviaBackend.Services.Interfaces;
+using TriviaBackend.Services.Implementations;
 
 namespace TriviaBackend.Controllers
 {
@@ -102,6 +104,45 @@ namespace TriviaBackend.Controllers
                 username = player.Username,
                 newElo = player.Elo,
                 totalGames = player.GamesPlayed
+            });
+        }
+
+        [HttpGet("statistics/{username}")]
+        public async Task<ActionResult<object>> GetLeaderboardStatistics()
+        {
+            var players = await _PlayerService.GetAllPlayersAsync();
+
+            if (players == null || players.Count == 0)
+            {
+                return Ok(new
+                {
+                    averagePoints = 0,
+                    totalPoints = 0,
+                    topPlayer = (string?)null,
+                    playerCount = 0
+                });
+            }
+
+            var gamePlayers = players.Select(p => new GamePlayer
+            {
+                Id = 0, // Temporary ID for statistics
+                Name = p.Username,
+                CurrentGameScore = p.TotalPoints,
+                CorrectAnswersInGame = p.GamesPlayed // Using GamesPlayed as approximation
+            }).ToList();
+
+            var statsCalculator = new StatisticsCalculator<GamePlayer, int>();
+
+            var avgPoints = statsCalculator.CalculateAverage(gamePlayers, gp => gp.CurrentGameScore);
+            var totalPoints = statsCalculator.CalculateTotal(gamePlayers, gp => gp.CurrentGameScore);
+            var topPlayer = statsCalculator.FindTopPerformer(gamePlayers, gp => gp.CurrentGameScore);
+
+            return Ok(new
+            {
+                averagePoints = avgPoints,
+                totalPoints = totalPoints,
+                topPlayer = topPlayer?.Name,
+                playerCount = players.Count
             });
         }
     }

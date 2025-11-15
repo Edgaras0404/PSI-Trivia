@@ -8,28 +8,38 @@ namespace TriviaBackend.Services.Implementations
 {
     /// <summary>
     /// Service for processing actions and events in a match. Works together with GameHub
-    /// <paramref name="questionService"/>
-    /// <paramref name="settings"/>
-    /// <paramref name="gameId"/>
     /// </summary>
-    public class GameEngineService(IQuestionService questionService, ILogger<ExceptionHandler> logger, GameSettings settings = default, string? gameId = null)
+    public class GameEngineService
     {
-        private readonly IQuestionService _questionService = questionService ?? throw new ArgumentNullException(nameof(questionService));
-        private readonly ILogger<ExceptionHandler> _logger = logger;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<ExceptionHandler> _logger;
         private List<GamePlayer> _players = new List<GamePlayer>();
         private Queue<TriviaQuestion> _gameQuestions = new Queue<TriviaQuestion>();
         private Dictionary<int, List<GameAnswer>> _gameAnswers = new Dictionary<int, List<GameAnswer>>();
         private TriviaQuestion? _currentQuestion;
         private DateTime _questionStartTime;
-        private GameSettings _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;
+        private GameSettings _settings;
 
         public GameStatus Status { get; private set; } = GameStatus.Waiting;
         public int CurrentQuestionNumber { get; private set; } = 0;
-        public string GameId { get; private set; } = gameId ?? Guid.NewGuid().ToString();
+        public string GameId { get; private set; }
         public TriviaQuestion? CurrentQuestion => _currentQuestion;
 
         public TimeSpan TimeRemaining => _currentQuestion != null ?
             TimeSpan.FromSeconds(_currentQuestion.TimeLimit) - (DateTime.Now - _questionStartTime) : TimeSpan.Zero;
+
+        // Traditional constructor
+        public GameEngineService(
+            IServiceProvider serviceProvider,
+            ILogger<ExceptionHandler> logger,
+            GameSettings settings = default,
+            string? gameId = null)
+        {
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;
+            GameId = gameId ?? Guid.NewGuid().ToString();
+        }
 
         public GameSettings GetSettings() => _settings;
 
@@ -59,14 +69,30 @@ namespace TriviaBackend.Services.Implementations
         public bool StartGame(QuestionCategory[]? categories = null, DifficultyLevel? maxDifficulty = null)
         {
             if (_players.Count == 0 || Status != GameStatus.Waiting)
+            {
+                _logger.LogError($"Cannot start game - Players: {_players.Count}, Status: {Status}");
                 return false;
+            }
 
             try
             {
+                _logger.LogInformation("=== GameEngineService.StartGame called ===");
+
                 var categoriesToUse = categories ?? _settings.QuestionCategories;
                 var difficultyToUse = maxDifficulty ?? _settings.MaxDifficulty;
 
-                var questions = _questionService.GetQuestions(categoriesToUse, difficultyToUse, _settings.QuestionsPerGame);
+                _logger.LogInformation("Creating scope for IQuestionService...");
+
+                // Create a scope and resolve IQuestionService
+                using var scope = _serviceProvider.CreateScope();
+                _logger.LogInformation("Scope created successfully");
+
+                var questionService = scope.ServiceProvider.GetRequiredService<IQuestionService>();
+                _logger.LogInformation("IQuestionService resolved successfully");
+
+                _logger.LogInformation($"Calling GetQuestions with {categoriesToUse.Length} categories, difficulty {difficultyToUse}, count {_settings.QuestionsPerGame}");
+
+                var questions = questionService.GetQuestions(categoriesToUse, difficultyToUse, _settings.QuestionsPerGame);
 
                 _logger.LogInformation($"Requested {_settings.QuestionsPerGame} questions, got {questions?.Count ?? 0} questions");
                 _logger.LogInformation($"Categories: {string.Join(", ", categoriesToUse.Select(c => c.ToString()))}");
@@ -74,7 +100,6 @@ namespace TriviaBackend.Services.Implementations
 
                 if (questions == null || questions.Count == 0)
                 {
-                    Console.WriteLine("No questions returned from QuestionService");
                     _logger.LogError("No questions returned from QuestionService");
                     return false;
                 }
@@ -88,19 +113,24 @@ namespace TriviaBackend.Services.Implementations
 
                 Status = GameStatus.InProgress;
                 CurrentQuestionNumber = 0;
+
+                _logger.LogInformation("Calling NextQuestion...");
                 NextQuestion();
+
+                _logger.LogInformation("Game started successfully!");
                 return true;
             }
             catch (Exception ex)
             {
                 _logger.LogError($"ERROR starting game: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+                _logger.LogError($"Inner exception: {ex.InnerException?.Message}");
                 throw new StartGameException("Game could not be started");
             }
         }
 
         public bool NextQuestion()
         {
-            // Only enforce 5-second delay if we've already shown a question
             if (CurrentQuestionNumber > 0 && DateTime.Now - _questionStartTime < TimeSpan.FromSeconds(5))
                 return true;
 

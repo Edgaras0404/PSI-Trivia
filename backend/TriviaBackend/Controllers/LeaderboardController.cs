@@ -2,7 +2,6 @@
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services.Interfaces.DB;
-using TriviaBackend.Services.Interfaces;
 using TriviaBackend.Services.Implementations;
 
 namespace TriviaBackend.Controllers

@@ -24,6 +24,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Test");
         builder.ConfigureServices(services =>
         {
+            // Remove the real TriviaDbContext
             var descriptors = services
                 .Where(d => d.ServiceType == typeof(DbContextOptions<TriviaDbContext>) ||
                             d.ServiceType == typeof(ITriviaDbContext))
@@ -31,21 +32,18 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
 
             foreach (var d in descriptors) services.Remove(d);
 
-            // Add InMemory DB
             services.AddDbContext<TriviaDbContext>(options =>
                 options.UseInMemoryDatabase("TestDb"));
 
-            // Re-register your interfaces pointing to the in-memory context
+            // Add interfaces again for in memory db
             services.AddScoped<ITriviaDbContext, TriviaDbContext>();
             services.AddTransient<IQuestionService, QuestionService>();
             services.AddTransient<IQuestionsService, QuestionsService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IPlayerService, PlayerService>();
 
-            // Mock any additional dependencies
             services.AddSingleton<ILogger<GameEngineService>>(new Mock<ILogger<GameEngineService>>().Object);
 
-            // Make sure tables exist
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<TriviaDbContext>();

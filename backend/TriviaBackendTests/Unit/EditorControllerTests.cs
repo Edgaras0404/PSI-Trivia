@@ -58,17 +58,15 @@ namespace TriviaBackendTests.Controller
         [Test]
         public async Task DeleteQuestion_CallsService()
         {
-            //var called = false;
+            _mockService
+                .Setup(s => s.DeleteQuestionByIdAsync(7))
+                .Returns(Task.CompletedTask);
 
-            //_mockService
-            //    .Setup(s => s.DeleteQuestionByIdAsync(7))
-            //    .Callback(() => called = true)
-            //    .Returns(Task.CompletedTask);
+            await _controller.DeleteQuestion(7);
 
-            //await _controller.DeleteQuestion(7);
+            var shouldEmpty = await _controller.GetQuestion(7);
 
-            //Assert.That(called, Is.True);
-            Assert.That(true);
+            Assert.That(shouldEmpty.Result, Is.InstanceOf<NotFoundResult>());
         }
     }
 }

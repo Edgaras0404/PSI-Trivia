@@ -86,9 +86,6 @@
             <summary>
             Class for managing player activity and game progression in a match
             </summary>
-            <param name="questionService"></param>
-            <param name="dbContext"></param>
-            <param name="logger"></param>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.CreateGame(System.String)">
             <summary>

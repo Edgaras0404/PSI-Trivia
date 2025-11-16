@@ -36,9 +36,8 @@ namespace TriviaBackend.Controllers
             {
                 return BadRequest("Time limit must be between 5 and 1000");
             }
-            await _DBService.AddQuestionAsync(request);
-
-            return Ok(request);
+            var created = await _DBService.AddQuestionAsync(request);
+            return Ok(created);
         }
 
         [HttpDelete("deletequestion/{id}")]

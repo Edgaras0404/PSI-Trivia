@@ -1,5 +1,4 @@
 ﻿using Moq;
-using NUnit.Framework;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Services.Implementations;
@@ -22,12 +21,12 @@ namespace TriviaBackendTests.Unit
         [SetUp]
         public void Setup()
         {
-            _questions = new List<TriviaQuestion>
-            {
+            _questions =
+            [
                 new() { Id = 1, Category = QuestionCategory.Geography, Difficulty = DifficultyLevel.Easy },
                 new() { Id = 2, Category = QuestionCategory.Science, Difficulty = DifficultyLevel.Hard },
                 new() { Id = 3, Category = QuestionCategory.Geography, Difficulty = DifficultyLevel.Medium }
-            };
+            ];
 
             //create IServiceScope then inside the scope mock ITriviaDbContext with DbSet<TriviaQuestion>
             var mockDbSet = MockDbSet.CreateMockDbSet(_questions);

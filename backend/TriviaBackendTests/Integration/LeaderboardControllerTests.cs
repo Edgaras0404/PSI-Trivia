@@ -1,9 +1,4 @@
 using Moq;
-using NUnit.Framework;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using TriviaBackend.Controllers;
@@ -11,7 +6,7 @@ using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services.Interfaces.DB;
 
-namespace TriviaBackendTests.Unit
+namespace TriviaBackendTests.Integration
 {
     [TestFixture]
     public class LeaderboardControllerTests

@@ -1,13 +1,11 @@
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Moq;
-using NUnit.Framework;
+using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Controllers;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Services.Interfaces.DB;
 
-namespace TriviaBackendTests.Controller
+namespace TriviaBackendTests.Unit
 {
     public class EditorControllerTests
     {

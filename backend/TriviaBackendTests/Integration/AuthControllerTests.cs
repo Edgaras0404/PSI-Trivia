@@ -1,10 +1,7 @@
-using NUnit.Framework;
 using System.Net;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
 using TriviaBackend;
 using TriviaBackend.Models.Entities;
-using TriviaBackend.Controllers;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace TriviaBackendTests.Integration

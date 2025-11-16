@@ -3,6 +3,7 @@ using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services.Interfaces.DB;
 using TriviaBackend.Services.Implementations;
+using TriviaBackend.Models.Records.Leaderboard;
 
 namespace TriviaBackend.Controllers
 {
@@ -16,7 +17,7 @@ namespace TriviaBackend.Controllers
         /// <param name="top"></param>
         /// <returns></returns>
         [HttpGet("global")]
-        public async Task<ActionResult<IEnumerable<object>>> GetGlobalLeaderboard([FromQuery] int top = 100)
+        public async Task<ActionResult<IEnumerable<GlobalLeaderboardEntry>>> GetGlobalLeaderboard([FromQuery] int top = 100)
         {
             var players = await _PlayerService.GetAllPlayersAsync();
 
@@ -24,15 +25,14 @@ namespace TriviaBackend.Controllers
 
             var leaderboard = players
                 .Take(top)
-                .Select((player, index) => new
-                {
-                    rank = index + 1,
-                    username = player.Username,
-                    elo = player.Elo,
-                    totalPoints = player.TotalPoints,
-                    gamesPlayed = player.GamesPlayed,
-                    joinDate = player.Created
-                });
+                .Select((player, index) => new GlobalLeaderboardEntry(
+                    Rank: index + 1,
+                    Username: player.Username,
+                    Elo: player.Elo,
+                    TotalPoints: player.TotalPoints,
+                    GamesPlayed: player.GamesPlayed,
+                    JoinDate: player.Created
+                ));
 
             return Ok(leaderboard);
         }
@@ -43,7 +43,7 @@ namespace TriviaBackend.Controllers
         /// <param name="username"></param>
         /// <returns></returns>
         [HttpGet("rank/{username}")]
-        public async Task<ActionResult<object>> GetPlayerRank(string username)
+        public async Task<ActionResult<PlayerRankInfo>> GetPlayerRank(string username)
         {
             var targetPlayer = await _PlayerService.GetPlayerByUsernameAsync(username);
 
@@ -59,14 +59,14 @@ namespace TriviaBackend.Controllers
 
             var rank = allPlayers.FindIndex(p => p.Username == username) + 1;
 
-            return Ok(new
-            {
-                username = targetPlayer.Username,
-                rank = rank,
-                elo = targetPlayer.Elo,
-                gamesPlayed = targetPlayer.GamesPlayed,
-                totalPlayers = allPlayers.Count
-            });
+            return Ok(new PlayerRankInfo
+            (
+                Username: targetPlayer.Username,
+                Rank: rank,
+                Elo: targetPlayer.Elo,
+                GamesPlayed: targetPlayer.GamesPlayed,
+                TotalPlayers: allPlayers.Count
+            ));
         }
 
         /// <summary>
@@ -98,28 +98,28 @@ namespace TriviaBackend.Controllers
                 throw new PlayerStatsUpdateException("Error while updating player statistics");
             }
 
-            return Ok(new
-            {
-                username = player.Username,
-                newElo = player.Elo,
-                totalGames = player.GamesPlayed
-            });
+            return Ok(new PlayerStatsUpdateResult
+            (
+                Username: player.Username,
+                NewElo: player.Elo,
+                TotalGames: player.GamesPlayed
+            ));
         }
 
-        [HttpGet("statistics/{username}")]
-        public async Task<ActionResult<object>> GetLeaderboardStatistics()
+        [HttpGet("statistics")]
+        public async Task<ActionResult<LeaderboardStatistics>> GetLeaderboardStatistics()
         {
             var players = await _PlayerService.GetAllPlayersAsync();
 
             if (players == null || players.Count == 0)
             {
-                return Ok(new
-                {
-                    averagePoints = 0,
-                    totalPoints = 0,
-                    topPlayer = (string?)null,
-                    playerCount = 0
-                });
+                return Ok(new LeaderboardStatistics
+                (
+                    AveragePoints: 0,
+                    TotalPoints: 0,
+                    TopPlayer: null,
+                    PlayerCount: 0
+                ));
             }
 
             var gamePlayers = players.Select(p => new GamePlayer
@@ -136,13 +136,13 @@ namespace TriviaBackend.Controllers
             var totalPoints = statsCalculator.CalculateTotal(gamePlayers, gp => gp.CurrentGameScore);
             var topPlayer = statsCalculator.FindTopPerformer(gamePlayers, gp => gp.CurrentGameScore);
 
-            return Ok(new
-            {
-                averagePoints = avgPoints,
-                totalPoints = totalPoints,
-                topPlayer = topPlayer?.Name,
-                playerCount = players.Count
-            });
+            return Ok(new LeaderboardStatistics
+            (
+                AveragePoints: avgPoints,
+                TotalPoints: totalPoints,
+                TopPlayer: topPlayer?.Name,
+                PlayerCount: players.Count
+            ));
         }
     }
 }

@@ -1,9 +1,6 @@
-using System;
 using System.Reflection;
 using Moq;
-using NUnit.Framework;
 using TriviaBackend.Models.Entities;
-using TriviaBackend.Models.Records;
 using TriviaBackend.Models.Enums;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Services.Implementations;
@@ -58,8 +55,8 @@ namespace TriviaBackendTests.Unit
             _engine.AddPlayer("A", 42);
 
             var field = typeof(GameEngineService)
-                .GetField("_players", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var players = (System.Collections.Generic.List<GamePlayer>)field!.GetValue(_engine)!;
+                .GetField("_players", BindingFlags.NonPublic | BindingFlags.Instance);
+            var players = (List<GamePlayer>)field!.GetValue(_engine)!;
 
             Assert.That(players.Count, Is.EqualTo(1));
             Assert.That(players[0].Id, Is.EqualTo(42));
@@ -75,7 +72,7 @@ namespace TriviaBackendTests.Unit
             _engine.EndGame();
 
             Assert.That(_engine.Status, Is.EqualTo(GameStatus.Finished));
-            Assert.That(_engine.NextQuestion(), Is.EqualTo(false));
+            Assert.That(_engine.NextQuestion(), Is.False);
         }
 
         [Test]

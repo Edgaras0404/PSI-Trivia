@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TriviaBackend.Models.Entities;
+using TriviaBackend.Models.Records;
 using TriviaBackend.Services.Interfaces.DB;
 
 namespace TriviaBackend.Controllers

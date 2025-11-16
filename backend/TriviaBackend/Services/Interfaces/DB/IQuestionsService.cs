@@ -1,4 +1,5 @@
 ﻿using TriviaBackend.Models.Entities;
+using TriviaBackend.Models.Records;
 
 namespace TriviaBackend.Services.Interfaces.DB
 {

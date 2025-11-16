@@ -1,5 +1,6 @@
 ﻿using TriviaBackend.Data;
 using TriviaBackend.Models.Entities;
+using TriviaBackend.Models.Records;
 using TriviaBackend.Services.Interfaces.DB;
 
 namespace TriviaBackend.Services.Implementations.DB

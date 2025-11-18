@@ -193,68 +193,15 @@ namespace TriviaBackend.Hubs
                         maxDifficulty = currentSettings.MaxDifficulty.ToString()
                     }
                 });
+
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                _logger.LogError($"ERROR: Cannot update player stats");
-                throw new GameUpdateException("Error updating player stats");
+                _logger.LogError($"ERROR updating game settings: {ex.Message}");
+                await Clients.Caller.SendAsync("Error", "Failed to update game settings");
             }
         }
 
-        /// <summary>
-        /// Connect a player to a game
-        /// </summary>
-        /// <param name="gameId"></param>
-        /// <param name="playerName"></param>
-        /// <returns></returns>
-        public async Task JoinGame(string gameId, string playerName)
-        {
-            if (!_activeGames.TryGetValue(gameId, out var gameEngine))
-            {
-                await Clients.Caller.SendAsync("Error", "Game not found");
-                return;
-            }
-
-            var playerId = await JoinGameInternal(gameId, playerName, gameEngine);
-
-            var playerDict = _gamePlayerUsernames.GetOrAdd(gameId, _ => new ConcurrentDictionary<int, string>());
-            playerDict.TryAdd(playerId, playerName);
-        }
-
-        private async Task<int> JoinGameInternal(string gameId, string playerName, GameEngineService gameEngine)
-        {
-            var playerId = GeneratePlayerId(gameEngine);
-
-            if (!gameEngine.AddPlayer(playerName, playerId))
-            {
-                await Clients.Caller.SendAsync("Error", "Could not join game");
-                return -1;
-            }
-
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
-
-            _playerGameMap.TryAdd(Context.ConnectionId, gameId);
-
-            var players = gameEngine.GetPlayers();
-            await Clients.Group(gameId).SendAsync("PlayerJoined", new
-            {
-                playerId,
-                playerName,
-                players = players.Select(p => new { p.Id, p.Name, p.IsActive })
-            });
-
-            await Clients.Caller.SendAsync("JoinedGame", new
-            {
-                gameId,
-                playerId,
-                playerName,
-                players = players.Select(p => new { p.Id, p.Name, p.IsActive })
-            });
-
-            return playerId;
-        }
-
-        // Special version for game creator - doesn't send JoinedGame event
         private async Task<int> JoinGameInternalForCreator(string gameId, string playerName, GameEngineService gameEngine)
         {
             var playerId = GeneratePlayerId(gameEngine);
@@ -282,80 +229,68 @@ namespace TriviaBackend.Hubs
         }
 
         /// <summary>
-        /// Remove a player from a game and cleanup if needed
+        /// Join an existing game
         /// </summary>
         /// <param name="gameId"></param>
-        /// <param name="playerId"></param>
+        /// <param name="playerName"></param>
         /// <returns></returns>
-        public async Task LeaveGame(string gameId, int playerId)
+        public async Task JoinGame(string gameId, string playerName)
         {
-            _logger.LogInformation($"=== LeaveGame called: gameId={gameId}, playerId={playerId} ===");
-
             if (!_activeGames.TryGetValue(gameId, out var gameEngine))
             {
-                _logger.LogWarning($"Game {gameId} not found when trying to leave");
+                await Clients.Caller.SendAsync("Error", "Game not found");
                 return;
             }
 
-            var players = gameEngine.GetPlayers();
-            var player = players.FirstOrDefault(p => p.Id == playerId);
+            var playerId = GeneratePlayerId(gameEngine);
 
-            if (player != null)
+            if (!gameEngine.AddPlayer(playerName, playerId))
             {
-                players.Remove(player);
+                await Clients.Caller.SendAsync("Error", "Game is full or already started");
+                return;
+            }
 
-                if (_gamePlayerUsernames.TryGetValue(gameId, out var playerDict))
-                {
-                    playerDict.TryRemove(playerId, out _);
-                }
+            await Groups.AddToGroupAsync(Context.ConnectionId, gameId);
+            _playerGameMap.TryAdd(Context.ConnectionId, gameId);
 
-                _logger.LogInformation($"Player {playerId} removed from game {gameId}. Remaining players: {players.Count}");
+            if (_gamePlayerUsernames.TryGetValue(gameId, out var playerDict))
+            {
+                playerDict.TryAdd(playerId, playerName);
+            }
 
+            var players = gameEngine.GetPlayers().Select(p => new { p.Id, p.Name }).ToList();
+
+            await Clients.Caller.SendAsync("JoinedGame", new { gameId, playerId, players });
+            await Clients.OthersInGroup(gameId).SendAsync("PlayerJoined", new { playerId, playerName, players });
+        }
+
+        /// <summary>
+        /// Leave the ongoing game
+        /// </summary>
+        /// <returns></returns>
+        public async Task LeaveGame()
+        {
+            if (_playerGameMap.TryGetValue(Context.ConnectionId, out var gameId))
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
                 _playerGameMap.TryRemove(Context.ConnectionId, out _);
 
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
-
-                if (players.Count == 0)
+                if (_activeGames.TryGetValue(gameId, out var gameEngine))
                 {
-                    _logger.LogInformation($"No players left in game {gameId}, cleaning up...");
+                    var players = gameEngine.GetPlayers().Select(p => new { p.Id, p.Name }).ToList();
+                    await Clients.Group(gameId).SendAsync("PlayerLeft", new { connectionId = Context.ConnectionId, players });
 
-                    if (_gameTimers.TryRemove(gameId, out var cts))
+                    if (gameEngine.Status == GameStatus.Waiting && players.Count == 0)
                     {
-                        cts.Cancel();
-                        cts.Dispose();
+                        _activeGames.TryRemove(gameId, out _);
+                        _gamePlayerUsernames.TryRemove(gameId, out _);
                     }
-
-                    var keysToRemove = _questionRevealed.Keys.Where(k => k.StartsWith($"{gameId}_")).ToList();
-                    foreach (var key in keysToRemove)
-                    {
-                        _questionRevealed.TryRemove(key, out _);
-                    }
-
-                    _activeGames.TryRemove(gameId, out _);
-                    _gamePlayerUsernames.TryRemove(gameId, out _);
-
-                    _logger.LogInformation($"Game {gameId} completely removed");
                 }
-                else
-                {
-                    await Clients.Group(gameId).SendAsync("PlayerLeft", new
-                    {
-                        playerId,
-                        playerName = player.Name,
-                        players = players.Select(p => new { p.Id, p.Name, p.IsActive })
-                    });
-
-                    _logger.LogInformation($"Notified remaining players in game {gameId} about player {playerId} leaving");
-                }
-            }
-            else
-            {
-                _logger.LogWarning($"Player {playerId} not found in game {gameId}");
             }
         }
 
         /// <summary>
-        /// Start the trivia match
+        /// Start the game
         /// </summary>
         /// <param name="gameId"></param>
         /// <param name="categories"></param>
@@ -410,7 +345,7 @@ namespace TriviaBackend.Hubs
                 {
                     _logger.LogInformation("Game started successfully!");
                     await Clients.Group(gameId).SendAsync("GameStarted");
-                    await SendCurrentQuestion(gameId, gameEngine);
+                    await SendQuestion(gameId);
                 }
                 else
                 {
@@ -426,23 +361,28 @@ namespace TriviaBackend.Hubs
         }
 
         /// <summary>
-        /// Send player's answer to be processed
+        /// Submit player's answer to the current question
         /// </summary>
         /// <param name="gameId"></param>
         /// <param name="playerId"></param>
-        /// <param name="answerIndex"></param>
+        /// <param name="answer"></param>
         /// <returns></returns>
-        public async Task SubmitAnswer(string gameId, int playerId, int answerIndex)
+        public async Task SubmitAnswer(string gameId, int playerId, int answer)
         {
-            _logger.LogInformation($"=== SubmitAnswer called: gameId={gameId}, playerId={playerId}, answer={answerIndex} ===");
-
             if (!_activeGames.TryGetValue(gameId, out var gameEngine))
             {
                 await Clients.Caller.SendAsync("Error", "Game not found");
                 return;
             }
 
-            var questionKey = $"{gameId}_{gameEngine.CurrentQuestion?.Id}";
+            var question = gameEngine.CurrentQuestion;
+            if (question == null)
+            {
+                await Clients.Caller.SendAsync("Error", "No current question");
+                return;
+            }
+
+            var questionKey = $"{gameId}_{question.Id}";
 
             if (_questionRevealed.TryGetValue(questionKey, out var revealed) && revealed)
             {
@@ -451,70 +391,52 @@ namespace TriviaBackend.Hubs
                 return;
             }
 
-            // Get player's score before submitting answer
-            var player = gameEngine.GetPlayers().FirstOrDefault(p => p.Id == playerId);
-            var scoreBefore = player?.CurrentGameScore ?? 0;
-
-            var result = gameEngine.SubmitAnswer(playerId, answerIndex);
-            _logger.LogInformation($"Answer result: {result}");
-
-            // Calculate earned points by comparing scores
-            var scoreAfter = player?.CurrentGameScore ?? 0;
-            var earnedPoints = scoreAfter - scoreBefore;
+            var result = gameEngine.SubmitAnswer(playerId, answer);
 
             await Clients.Caller.SendAsync("AnswerResult", new
             {
                 result = result.ToString(),
-                isCorrect = result == AnswerResult.Correct,
-                earnedPoints = earnedPoints,
-                correctAnswer = gameEngine.CurrentQuestion?.CorrectAnswerIndex
+                earnedPoints = gameEngine.GetPlayers().FirstOrDefault(p => p.Id == playerId)?.CurrentGameScore ?? 0,
+                correctAnswer = gameEngine.CurrentQuestion?.CorrectAnswerIndex ?? 0
             });
 
             if (gameEngine.AllPlayersAnswered())
             {
-                _logger.LogInformation($"All players answered for game {gameId}");
-
-                if (_gameTimers.TryGetValue(gameId, out var cts))
+                // Cancel the timer since all players answered
+                if (_gameTimers.TryRemove(gameId, out var cts))
                 {
                     cts.Cancel();
+                    cts.Dispose();
                 }
 
                 await RevealAnswerAndProgress(gameId, 5000, gameEngine);
             }
-            else
-            {
-                _logger.LogInformation($"Waiting for more players to answer in game {gameId}");
-            }
         }
 
         /// <summary>
-        /// Get the next question in the game sequence
+        /// Send the current question to all players - UPDATED WITH TIMER
         /// </summary>
         /// <param name="gameId"></param>
         /// <returns></returns>
-        public async Task NextQuestion(string gameId)
+        private async Task SendQuestion(string gameId)
         {
+            if (_staticHubContext == null)
+            {
+                _logger.LogError("ERROR: Hub context is null in SendQuestion!");
+                return;
+            }
+
             if (!_activeGames.TryGetValue(gameId, out var gameEngine))
             {
-                await Clients.Caller.SendAsync("Error", "Game not found");
                 return;
             }
 
-            if (!gameEngine.NextQuestion())
-            {
-                await EndGame(gameId, gameEngine);
-                return;
-            }
-
-            await SendCurrentQuestion(gameId, gameEngine);
-        }
-
-        private async Task SendCurrentQuestion(string gameId, GameEngineService gameEngine)
-        {
             var question = gameEngine.CurrentQuestion;
+
             if (question == null)
             {
                 _logger.LogError($"ERROR: No current question for game {gameId}");
+                await EndGame(gameId);
                 return;
             }
 
@@ -530,7 +452,7 @@ namespace TriviaBackend.Hubs
 
             _logger.LogInformation($"Sending question {gameEngine.CurrentQuestionNumber} (ID: {question.Id}) to game {gameId}, TimeLimit: {question.TimeLimit}s");
 
-            await Clients.Group(gameId).SendAsync("QuestionSent", new
+            await _staticHubContext.Clients.Group(gameId).SendAsync("QuestionSent", new
             {
                 questionNumber = gameEngine.CurrentQuestionNumber,
                 questionText = question.QuestionText,
@@ -568,8 +490,8 @@ namespace TriviaBackend.Hubs
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogInformation($"[TIMER] ERROR in timer for game {gameId}: {ex.Message}");
-                    _logger.LogInformation($"[TIMER] Stack trace: {ex.StackTrace}");
+                    _logger.LogError($"[TIMER] ERROR in timer for game {gameId}: {ex.Message}");
+                    _logger.LogError($"[TIMER] Stack trace: {ex.StackTrace}");
                 }
                 finally
                 {
@@ -583,49 +505,13 @@ namespace TriviaBackend.Hubs
         }
 
         /// <summary>
-        /// Get game stats using generic calculator
+        /// Reveal the answer and automatically progress to next question
         /// </summary>
         /// <param name="gameId"></param>
-        /// <returns></returns>
-        public async Task GetGameStatistics(string gameId)
-        {
-            if (!_activeGames.TryGetValue(gameId, out var gameEngine))
-            {
-                await Clients.Caller.SendAsync("Error", "Game not found");
-                return;
-            }
-
-            var statsCalculator = new StatisticsCalculator<GamePlayer, int>();
-            var players = gameEngine.GetPlayers();
-
-            var avgScore = statsCalculator.CalculateAverage(players, p => p.CurrentGameScore);
-            var totalScore = statsCalculator.CalculateTotal(players, p => p.CurrentGameScore); // Fixed
-            var topPlayer = statsCalculator.FindTopPerformer(players, p => p.CurrentGameScore);
-            var top3Players = statsCalculator.GetTopN(players, p => p.CurrentGameScore, 3);
-
-            var doubleStatsCalculator = new StatisticsCalculator<GamePlayer, double>();
-            var avgCorrectAnswers = doubleStatsCalculator.CalculateAverage(players, p => (double)p.CorrectAnswersInGame);
-
-            await Clients.Caller.SendAsync("GameStatistics", new
-            {
-                averageScore = avgScore,
-                totalScore = totalScore,
-                topPlayer = topPlayer?.Name,
-                topPlayerScore = topPlayer?.CurrentGameScore,
-                top3Players = top3Players.Select(p => new { p.Name, p.CurrentGameScore }),
-                averageCorrectAnswers = avgCorrectAnswers
-            });
-        }
-
-
-        /// <summary>
-        /// Send answer to all players and automatically go to next question after set amount of time
-        /// </summary>
-        /// <param name="gameId"></param>
-        /// <param name="autoProgressMillisecodns"></param>
+        /// <param name="autoProgressMilliseconds"></param>
         /// <param name="gameEngine"></param>
         /// <returns></returns>
-        private async Task RevealAnswerAndProgress(string gameId, int autoProgressMillisecodns, GameEngineService gameEngine)
+        private async Task RevealAnswerAndProgress(string gameId, int autoProgressMilliseconds, GameEngineService gameEngine)
         {
             _logger.LogInformation($"=== RevealAnswerAndProgress called for game {gameId} ===");
 
@@ -651,7 +537,6 @@ namespace TriviaBackend.Hubs
             }
 
             _questionRevealed.TryUpdate(questionKey, true, false);
-            Console.WriteLine($"Revealing answer for question {question.Id} in game {gameId}");
             _questionRevealed[questionKey] = true;
             _logger.LogInformation($"Revealing answer for question {question.Id} in game {gameId}");
 
@@ -670,33 +555,31 @@ namespace TriviaBackend.Hubs
                 })
             });
 
-            _logger.LogInformation($"Sent AnswerRevealed to game {gameId}");
+            _logger.LogInformation($"Sent QuestionRevealed to game {gameId}");
 
-            Console.WriteLine($"Waiting {autoProgressMillisecodns} milliseconds before next question...");
-            _logger.LogInformation($"Waiting {autoProgressMillisecodns} seconds before next question...");
-            await Task.Delay(autoProgressMillisecodns);
+            _logger.LogInformation($"Waiting {autoProgressMilliseconds}ms before next question...");
+            await Task.Delay(autoProgressMilliseconds);
 
             _logger.LogInformation($"Moving to next question for game {gameId}");
 
             if (!gameEngine.NextQuestion())
             {
                 _logger.LogInformation($"No more questions, ending game {gameId}");
-                await EndGame(gameId, gameEngine);
+                await EndGame(gameId);
             }
             else
             {
                 _logger.LogInformation($"Loading next question for game {gameId}");
-                await SendCurrentQuestion(gameId, gameEngine);
+                await SendQuestion(gameId);
             }
         }
 
         /// <summary>
-        /// End the ongoing match
+        /// End the game and show final leaderboard
         /// </summary>
         /// <param name="gameId"></param>
-        /// <param name="gameEngine"></param>
         /// <returns></returns>
-        private async Task EndGame(string gameId, GameEngineService gameEngine)
+        private async Task EndGame(string gameId)
         {
             _logger.LogInformation($"=== Ending game {gameId} ===");
 
@@ -706,17 +589,26 @@ namespace TriviaBackend.Hubs
                 return;
             }
 
+            if (!_activeGames.TryGetValue(gameId, out var gameEngine))
+            {
+                return;
+            }
+
+            // Clean up any remaining timers
             if (_gameTimers.TryRemove(gameId, out var cts))
             {
                 cts.Cancel();
                 cts.Dispose();
             }
 
+            // Clean up all question revealed keys for this game
             var keysToRemove = _questionRevealed.Keys.Where(k => k.StartsWith($"{gameId}_")).ToList();
             foreach (var key in keysToRemove)
             {
                 _questionRevealed.TryRemove(key, out _);
             }
+
+            gameEngine.EndGame();
 
             var finalLeaderboard = gameEngine.GetCurrentGameLeaderboard();
 
@@ -735,7 +627,6 @@ namespace TriviaBackend.Hubs
 
             _activeGames.TryRemove(gameId, out _);
             _gamePlayerUsernames.TryRemove(gameId, out _);
-            Console.WriteLine($"Game {gameId} ended and removed from active games");
             _logger.LogInformation($"Game {gameId} ended and removed from active games");
         }
 
@@ -747,7 +638,13 @@ namespace TriviaBackend.Hubs
         /// <returns></returns>
         private async Task UpdatePlayerStats(string gameId, List<GamePlayer> finalLeaderboard)
         {
-            using var scope = _serviceProvider.CreateScope();
+            if (_staticServiceProvider == null)
+            {
+                _logger.LogError("ERROR: Static service provider is null in UpdatePlayerStats!");
+                return;
+            }
+
+            using var scope = _staticServiceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ITriviaDbContext>();
 
             try

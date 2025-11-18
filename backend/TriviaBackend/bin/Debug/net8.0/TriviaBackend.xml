@@ -107,23 +107,21 @@
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.JoinGame(System.String,System.String)">
             <summary>
-            Connect a player to a game
+            Join an existing game
             </summary>
             <param name="gameId"></param>
             <param name="playerName"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.LeaveGame(System.String,System.Int32)">
+        <member name="M:TriviaBackend.Hubs.GameHub.LeaveGame">
             <summary>
-            Remove a player from a game and cleanup if needed
+            Leave the ongoing game
             </summary>
-            <param name="gameId"></param>
-            <param name="playerId"></param>
             <returns></returns>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.StartGame(System.String,System.String[],System.String)">
             <summary>
-            Start the trivia match
+            Start the game
             </summary>
             <param name="gameId"></param>
             <param name="categories"></param>
@@ -132,42 +130,34 @@
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.SubmitAnswer(System.String,System.Int32,System.Int32)">
             <summary>
-            Send player's answer to be processed
+            Submit player's answer to the current question
             </summary>
             <param name="gameId"></param>
             <param name="playerId"></param>
-            <param name="answerIndex"></param>
+            <param name="answer"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.NextQuestion(System.String)">
+        <member name="M:TriviaBackend.Hubs.GameHub.SendQuestion(System.String)">
             <summary>
-            Get the next question in the game sequence
-            </summary>
-            <param name="gameId"></param>
-            <returns></returns>
-        </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.GetGameStatistics(System.String)">
-            <summary>
-            Get game stats using generic calculator
+            Send the current question to all players - UPDATED WITH TIMER
             </summary>
             <param name="gameId"></param>
             <returns></returns>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.RevealAnswerAndProgress(System.String,System.Int32,TriviaBackend.Services.Implementations.GameEngineService)">
             <summary>
-            Send answer to all players and automatically go to next question after set amount of time
+            Reveal the answer and automatically progress to next question
             </summary>
             <param name="gameId"></param>
-            <param name="autoProgressMillisecodns"></param>
+            <param name="autoProgressMilliseconds"></param>
             <param name="gameEngine"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.EndGame(System.String,TriviaBackend.Services.Implementations.GameEngineService)">
+        <member name="M:TriviaBackend.Hubs.GameHub.EndGame(System.String)">
             <summary>
-            End the ongoing match
+            End the game and show final leaderboard
             </summary>
             <param name="gameId"></param>
-            <param name="gameEngine"></param>
             <returns></returns>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.UpdatePlayerStats(System.String,System.Collections.Generic.List{TriviaBackend.Models.Entities.GamePlayer})">

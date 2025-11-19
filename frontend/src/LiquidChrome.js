@@ -9,7 +9,7 @@ export const LiquidChrome = ({
     amplitude = 0.3,
     frequencyX = 3,
     frequencyY = 3,
-    interactive = true,
+    interactive = false,
     ...props
 }) => {
     const containerRef = useRef(null);

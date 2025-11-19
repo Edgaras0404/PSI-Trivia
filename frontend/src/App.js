@@ -357,7 +357,7 @@ function TriviaGame({ username, onLogout }) {
                         amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
-                        interactive={true}
+                        interactive={false}
                     />
                 </div>
                 <div className="container">
@@ -380,7 +380,7 @@ function TriviaGame({ username, onLogout }) {
                         amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
-                        interactive={true}
+                        interactive={false}
                     />
                 </div>
                 <div className="container">
@@ -465,7 +465,7 @@ function TriviaGame({ username, onLogout }) {
                         amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
-                        interactive={true}
+                        interactive={false}
                     />
                 </div>
                 <div className="container">
@@ -541,7 +541,7 @@ function TriviaGame({ username, onLogout }) {
                         amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
-                        interactive={true}
+                        interactive={false}
                     />
                 </div>
                 <div className="container" style={{ paddingTop: '100px' }}>
@@ -750,7 +750,7 @@ function TriviaGame({ username, onLogout }) {
                         amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
-                        interactive={true}
+                        interactive={false}
                     />
                 </div>
                 <div className="container">
@@ -833,7 +833,7 @@ function TriviaGame({ username, onLogout }) {
                         amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
-                        interactive={true}
+                        interactive={false}
                     />
                 </div>
                 <div className="container">

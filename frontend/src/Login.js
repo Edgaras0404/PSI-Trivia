@@ -60,7 +60,7 @@ const Login = ({ onLoginSuccess }) => {
                     amplitude={0.4}
                     frequencyX={2}
                     frequencyY={2}
-                    interactive={true}
+                    interactive={false}
                 />
             </div>
             <div className="login-container">

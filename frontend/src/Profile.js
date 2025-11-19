@@ -37,7 +37,7 @@ const Profile = ({ username, onBack }) => {
                         amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
-                        interactive={true}
+                        interactive={false}
                     />
                 </div>
                 <div className="container">
@@ -57,7 +57,7 @@ const Profile = ({ username, onBack }) => {
                         amplitude={0.6}
                         frequencyX={3}
                         frequencyY={3}
-                        interactive={true}
+                        interactive={false}
                     />
                 </div>
                 <div className="container">
@@ -89,7 +89,7 @@ const Profile = ({ username, onBack }) => {
                     amplitude={0.6}
                     frequencyX={3}
                     frequencyY={3}
-                    interactive={true}
+                    interactive={false}
                 />
             </div>
             <div className="container" style={{ paddingTop: '20px' }}>

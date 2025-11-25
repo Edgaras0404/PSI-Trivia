@@ -4,6 +4,7 @@ using TriviaBackend.Models.Enums;
 using TriviaBackend.Services.Implementations;
 using TriviaBackend.Data;
 using Microsoft.Extensions.DependencyInjection;
+using TriviaBackendTests.TestEnvSetup;
 
 namespace TriviaBackendTests.Unit
 {

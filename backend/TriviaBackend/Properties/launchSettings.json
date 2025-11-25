@@ -19,6 +19,24 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
+    "Run tests": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Windows\\System32\\cmd.exe",
+      "commandLineArgs": "/c \"RunTestsOnly.bat\"",
+      "workingDirectory": "$(ProjectDir)\\..\\TriviaBackendTests",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Testing"
+      }
+    },
+    "Run coverage": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Windows\\System32\\cmd.exe",
+      "commandLineArgs": "/c \"RunCoverageTest.bat\"",
+      "workingDirectory": "$(ProjectDir)\\..\\TriviaBackendTests",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Testing"
+      }
+    },
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,

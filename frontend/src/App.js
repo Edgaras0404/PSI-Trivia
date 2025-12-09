@@ -290,7 +290,9 @@ function TriviaGame({ username, onLogout }) {
                 maxPlayers,
                 questionsPerGame,
                 selectedCategories,
-                selectedDifficulty
+                selectedDifficulty,
+                isTeamMode, 
+                numberOfTeams
             );
 
             // Start the game

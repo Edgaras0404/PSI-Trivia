@@ -39,6 +39,20 @@
             <param name="request"></param>
             <returns></returns>
         </member>
+        <member name="T:TriviaBackend.Controllers.ClanController">
+            <summary>
+            Controller for handling actions related to clans
+            </summary>
+            <param name="_ClanService"></param>
+            <param name="_UserService"></param>
+        </member>
+        <member name="M:TriviaBackend.Controllers.ClanController.#ctor(TriviaBackend.Services.Interfaces.DB.IClanService,TriviaBackend.Services.Interfaces.DB.IUserService)">
+            <summary>
+            Controller for handling actions related to clans
+            </summary>
+            <param name="_ClanService"></param>
+            <param name="_UserService"></param>
+        </member>
         <member name="T:TriviaBackend.Controllers.EditorController">
             <summary>
             Controller for managing trivia question editing
@@ -294,6 +308,30 @@
             <inheritdoc />
         </member>
         <member name="M:TriviaBackend.Migrations.AddTotalPointsToPlayer.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.Clans">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.Clans.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.Clans.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.Clans.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.RemoveClanBadField">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RemoveClanBadField.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RemoveClanBadField.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RemoveClanBadField.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
         <member name="T:TriviaBackend.Services.Implementations.GameEngineService">

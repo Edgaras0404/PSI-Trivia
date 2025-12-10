@@ -11,20 +11,39 @@ namespace TriviaBackend.Services.Implementations.DB
         public async Task<Clan?> GetClanByIdAsync(int clanId) =>
             await _context.Clans.FindAsync(clanId);
 
+        public async Task<Clan?> GetClanByNameAsync(string name) =>
+            await _context.Clans.FirstOrDefaultAsync(c => c.Name == name);
+
         public async Task AddMemberToClanAsync(Clan clan, BaseUser user)
         {
             user.ClanId = clan.Id;
-            clan.MemberIds.Add(user.Id);
+            clan.MemberCount++;
             await _context.SaveChangesAsync();
         }
 
         public async Task RemoveMemberFromClanAsync(Clan clan, BaseUser user)
         {
             user.ClanId = null;
-            clan.MemberIds.Remove(user.Id);
+            clan.MemberCount--;
             await _context.SaveChangesAsync();
         }
 
+        public async Task CreateClanAsync(Clan clan)
+        {
+            _context.Clans.Add(clan);
+            await _context.SaveChangesAsync();
+        }
 
+        public async Task RenameClanAsync(Clan clan, string newName)
+        {
+            clan.Name = newName;
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteClanAsync(Clan clan)
+        {
+            _context.Clans.Remove(clan);
+            await _context.SaveChangesAsync();
+        }
     }
 }

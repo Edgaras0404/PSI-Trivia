@@ -6,7 +6,7 @@ namespace TriviaBackend.Models.Entities
     {
         [Key]
         public int Id { get; set; }
-        public int Name { get; set; }
-        public List<string> MemberIds { get; set; } = [];
+        public string Name { get; set; } = string.Empty;
+        public int MemberCount { get; set; } = 0;
     }
 }

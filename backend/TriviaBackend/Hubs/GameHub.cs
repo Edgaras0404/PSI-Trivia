@@ -66,7 +66,9 @@ namespace TriviaBackend.Hubs
                 QuestionsPerGame = 10,
                 DefaultTimeLimit = 30,
                 QuestionCategories = Enum.GetValues<QuestionCategory>(),
-                MaxDifficulty = DifficultyLevel.Hard
+                MaxDifficulty = DifficultyLevel.Hard,
+                IsTeamMode = false,  // Default to free-for-all
+                NumberOfTeams = 2
             };
 
             var gameEngine = new GameEngineService(_staticServiceProvider!, _logger, setting, gameId);
@@ -79,7 +81,7 @@ namespace TriviaBackend.Hubs
 
             _gamePlayerUsernames.TryAdd(gameId, new ConcurrentDictionary<int, string>());
 
-            // Add the creator as a player using a modified join method that doesn't send JoinedGame
+            // Add the creator as a player
             var playerId = await JoinGameInternalForCreator(gameId, playerName, gameEngine);
 
             if (_gamePlayerUsernames.TryGetValue(gameId, out var playerDict))
@@ -90,7 +92,7 @@ namespace TriviaBackend.Hubs
             var allCategories = Enum.GetValues<QuestionCategory>().Select(c => c.ToString()).ToArray();
             var allDifficulties = Enum.GetValues<DifficultyLevel>().Select(d => d.ToString()).ToArray();
 
-            // Send GameCreated as the final event so isHost stays true
+            // Send GameCreated with team mode info
             await Clients.Caller.SendAsync("GameCreated", new
             {
                 gameId,
@@ -102,11 +104,58 @@ namespace TriviaBackend.Hubs
                     questionsPerGame = setting.QuestionsPerGame,
                     defaultTimeLimit = setting.DefaultTimeLimit,
                     questionCategories = setting.QuestionCategories.Select(c => c.ToString()).ToArray(),
-                    maxDifficulty = setting.MaxDifficulty.ToString()
+                    maxDifficulty = setting.MaxDifficulty.ToString(),
+                    isTeamMode = setting.IsTeamMode,
+                    numberOfTeams = setting.NumberOfTeams
                 },
                 availableCategories = allCategories,
-                availableDifficulties = allDifficulties
+                availableDifficulties = allDifficulties,
+                teams = (object?)null  // No teams in free-for-all mode initially
             });
+        }
+
+        /// <summary>
+        /// Assign player to the team before starting the game
+        /// </summary>
+        /// <param name="gameId"></param>
+        /// <param name="playerId"></param>
+        /// <param name="teamId"></param>
+        /// <returns></returns>
+        public async Task AssignPlayerToTeam(string gameId, int playerId, int teamId)
+        {
+            if (!_activeGames.TryGetValue(gameId, out var gameEngine))
+            {
+                await Clients.Caller.SendAsync("Error", "Game not found");
+                return;
+            }
+
+            if (!gameEngine.GetSettings().IsTeamMode)
+            {
+                await Clients.Caller.SendAsync("Error", "Game is not in team mode");
+                return;
+            }
+
+            if (gameEngine.Status != GameStatus.Waiting)
+            {
+                await Clients.Caller.SendAsync("Error", "Cannot change teams after game has started");
+                return;
+            }
+
+            if (!gameEngine.AssignPlayerToSpecificTeam(playerId, teamId))
+            {
+                await Clients.Caller.SendAsync("Error", "Failed to assign player to team");
+                return;
+            }
+
+            var teams = gameEngine.GetTeams().Select(t => new
+            {
+                t.Id,
+                t.Name,
+                memberCount = t.Members.Count,
+                members = t.Members.Select(m => new { m.Id, m.Name })
+            });
+
+            await Clients.Group(gameId).SendAsync("TeamsUpdated", new { teams });
         }
 
         /// <summary>
@@ -119,14 +168,13 @@ namespace TriviaBackend.Hubs
         /// <param name="maxDifficulty"></param>
         /// <returns></returns>
         public async Task UpdateGameSettings(string gameId, int? maxPlayers = null, int? questionsPerGame = null,
-            string[]? categories = null, string? maxDifficulty = null)
+            string[]? categories = null, string? maxDifficulty = null, bool? isTeamMode = null, int? numberOfTeams = null)
         {
             try
             {
                 if (!_activeGames.TryGetValue(gameId, out var gameEngine))
                 {
                     await Clients.Caller.SendAsync("Error", "Game not found");
-
                     return;
                 }
 
@@ -136,7 +184,6 @@ namespace TriviaBackend.Hubs
                     return;
                 }
 
-
                 var existingSettings = gameEngine.GetSettings();
                 var currentPlayers = gameEngine.GetPlayers();
 
@@ -144,8 +191,20 @@ namespace TriviaBackend.Hubs
                 {
                     MaxPlayers = maxPlayers ?? existingSettings.MaxPlayers,
                     QuestionsPerGame = questionsPerGame ?? existingSettings.QuestionsPerGame,
-                    DefaultTimeLimit = existingSettings.DefaultTimeLimit
+                    DefaultTimeLimit = existingSettings.DefaultTimeLimit,
+                    IsTeamMode = isTeamMode ?? existingSettings.IsTeamMode,
+                    NumberOfTeams = numberOfTeams ?? existingSettings.NumberOfTeams
                 };
+
+                // Validate number of teams
+                if (currentSettings.IsTeamMode && currentSettings.NumberOfTeams < 2)
+                {
+                    currentSettings.NumberOfTeams = 2;
+                }
+                if (currentSettings.NumberOfTeams > 6)
+                {
+                    currentSettings.NumberOfTeams = 6;
+                }
 
                 if (categories != null && categories.Length > 0)
                 {
@@ -181,6 +240,15 @@ namespace TriviaBackend.Hubs
                 // Replace the game engine
                 _activeGames.TryUpdate(gameId, newGameEngine, gameEngine);
 
+                // Get teams if in team mode
+                var teams = currentSettings.IsTeamMode ? newGameEngine.GetTeams().Select(t => new
+                {
+                    t.Id,
+                    t.Name,
+                    memberCount = t.Members.Count,
+                    members = t.Members.Select(m => new { m.Id, m.Name })
+                }) : null;
+
                 // Notify all players in the game about the updated settings
                 await Clients.Group(gameId).SendAsync("SettingsUpdated", new
                 {
@@ -190,10 +258,12 @@ namespace TriviaBackend.Hubs
                         questionsPerGame = currentSettings.QuestionsPerGame,
                         defaultTimeLimit = currentSettings.DefaultTimeLimit,
                         questionCategories = currentSettings.QuestionCategories.Select(c => c.ToString()).ToArray(),
-                        maxDifficulty = currentSettings.MaxDifficulty.ToString()
-                    }
+                        maxDifficulty = currentSettings.MaxDifficulty.ToString(),
+                        isTeamMode = currentSettings.IsTeamMode,
+                        numberOfTeams = currentSettings.NumberOfTeams
+                    },
+                    teams
                 });
-
             }
             catch (Exception ex)
             {

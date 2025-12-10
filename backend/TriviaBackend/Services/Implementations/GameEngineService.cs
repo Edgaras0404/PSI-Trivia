@@ -14,6 +14,7 @@ namespace TriviaBackend.Services.Implementations
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<ExceptionHandler> _logger;
         private List<GamePlayer> _players = new List<GamePlayer>();
+        private List<Team> _teams = new List<Team>();
         private Queue<TriviaQuestion> _gameQuestions = new Queue<TriviaQuestion>();
         private Dictionary<int, List<GameAnswer>> _gameAnswers = new Dictionary<int, List<GameAnswer>>();
         private TriviaQuestion? _currentQuestion;
@@ -39,11 +40,31 @@ namespace TriviaBackend.Services.Implementations
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings.MaxPlayers == 0 ? new GameSettings() : settings;
             GameId = gameId ?? Guid.NewGuid().ToString();
+
+            if(_settings.IsTeamMode)
+            {
+                InitializeTeams();
+            }
         }
 
         public GameSettings GetSettings() => _settings;
 
-        public bool AddPlayer(string playerName, int? playerId = null, DateTime? joinTime = null)
+        private void InitializeTeams()
+        {
+            _teams.Clear();
+            var teamNames = new[] { "Red", "Blue", "Green", "Yellow" };
+
+            for (int i = 0; i < _settings.NumberOfTeams; i++)
+            {
+                _teams.Add(new Team
+                {
+                    Id = i + 1,
+                    Name = teamNames[i]
+                });
+            }
+        }
+
+        public bool AddPlayer(string playerName, int? playerId = null, DateTime? joinTime = null, int? teamId = null)
         {
             if (_players.Count >= _settings.MaxPlayers)
                 return false;
@@ -63,8 +84,58 @@ namespace TriviaBackend.Services.Implementations
 
             _players.Add(player);
             _gameAnswers[player.Id] = new List<GameAnswer>();
+
+            if(_settings.IsTeamMode)
+            {
+                AssignPlayerToTeam(player, teamId);
+            }
+
             return true;
         }
+
+        private void AssignPlayerToTeam(GamePlayer player, int? preferredTeamId = null)
+        {
+            Team? targetTeam = null;
+
+            if (preferredTeamId.HasValue)
+            {
+                targetTeam = _teams.FirstOrDefault(t => t.Id == preferredTeamId.Value);
+            }
+
+            // Auto-assign to smallest team if no preference or team not found
+            if (targetTeam == null)
+            {
+                targetTeam = _teams.OrderBy(t => t.Members.Count).First();
+            }
+
+            targetTeam.AddMember(player);
+        }
+
+        public bool AssignPlayerToSpecificTeam(int playerId, int teamId)
+        {
+            if (!_settings.IsTeamMode || Status != GameStatus.Waiting)
+                return false;
+
+            var player = _players.FirstOrDefault(p => p.Id == playerId);
+            if (player == null)
+                return false;
+
+            var newTeam = _teams.FirstOrDefault(t => t.Id == teamId);
+            if (newTeam == null)
+                return false;
+
+            // Remove from current team
+            foreach (var team in _teams)
+            {
+                team.RemoveMember(player);
+            }
+
+            // Add to new team
+            newTeam.AddMember(player);
+            return true;
+        }
+
+        public List<Team> GetTeams() => _teams.ToList();
 
         public bool StartGame(QuestionCategory[]? categories = null, DifficultyLevel? maxDifficulty = null)
         {
@@ -169,6 +240,17 @@ namespace TriviaBackend.Services.Implementations
             player.CurrentGameScore += pointsEarned;
             if (isCorrect) player.CorrectAnswersInGame++;
 
+            // Update team score if in team mode
+            if (_settings.IsTeamMode)
+            {
+                var team = _teams.FirstOrDefault(t => t.Members.Any(m => m.Id == playerId));
+                if (team != null)
+                {
+                    team.UpdateScore(pointsEarned);
+                    if (isCorrect) team.CorrectAnswers++;
+                }
+            }
+
             var answer = new GameAnswer(playerId, _currentQuestion.Id, selectedAnswer, submissionTime);
             _gameAnswers[playerId].Add(answer);
 
@@ -180,6 +262,13 @@ namespace TriviaBackend.Services.Implementations
             var activePlayers = _players.Where(p => p.IsActive).ToList();
             activePlayers.Sort();
             return activePlayers;
+        }
+
+        public List<Team> GetTeamLeaderboard()
+        {
+            return _teams.OrderByDescending(t => t.TotalScore)
+                        .ThenByDescending(t => t.CorrectAnswers)
+                        .ToList();
         }
 
         public void EndGame()

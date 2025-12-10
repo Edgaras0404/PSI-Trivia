@@ -77,6 +77,11 @@ function TriviaGame({ username, onLogout }) {
     const [showProfile, setShowProfile] = useState(false);
     const [isHost, setIsHost] = useState(false);
 
+    // Team mode state
+    const [isTeamMode, setIsTeamMode] = useState(false);
+    const [numberOfTeams, setNumberOfTeams] = useState(2);
+    const [teams, setTeams] = useState([]);
+
     // local editor toggle inside TriviaGame
     const [showEditorLocal, setShowEditorLocal] = useState(false);
     const openEditor = () => setShowEditorLocal(true);
@@ -115,13 +120,17 @@ function TriviaGame({ username, onLogout }) {
             setIsHost(true);
             setGameState('lobby');
 
-            // Set initial settings from server response
             if (data.settings) {
                 setGameSettings(data.settings);
                 setMaxPlayers(data.settings.maxPlayers);
                 setQuestionsPerGame(data.settings.questionsPerGame);
                 setSelectedCategories(data.settings.questionCategories || availableCategories);
                 setSelectedDifficulty(data.settings.maxDifficulty || 'Hard');
+                setIsTeamMode(data.settings.isTeamMode || false);
+                setNumberOfTeams(data.settings.numberOfTeams || 2);
+            }
+            if (data.teams) {
+                setTeams(data.teams);
             }
         };
 
@@ -144,6 +153,11 @@ function TriviaGame({ username, onLogout }) {
             setPlayers(data.players);
         };
 
+        const handleTeamsUpdated = (data) => {
+            console.log('Teams updated:', data);
+            setTeams(data.teams || []);
+        };
+
         const handleSettingsUpdated = (data) => {
             console.log('Settings updated:', data);
             setGameSettings(data.settings);
@@ -151,6 +165,11 @@ function TriviaGame({ username, onLogout }) {
             setQuestionsPerGame(data.settings.questionsPerGame);
             setSelectedCategories(data.settings.questionCategories);
             setSelectedDifficulty(data.settings.maxDifficulty);
+            setIsTeamMode(data.settings.isTeamMode);
+            setNumberOfTeams(data.settings.numberOfTeams);
+            if (data.teams) {
+                setTeams(data.teams);
+            }
         };
 
         const handleGameStarted = () => {
@@ -195,6 +214,7 @@ function TriviaGame({ username, onLogout }) {
         connection.on('PlayerJoined', handlePlayerJoined);
         connection.on('PlayerLeft', handlePlayerLeft);
         connection.on('SettingsUpdated', handleSettingsUpdated);
+        connection.on('TeamsUpdated', handleTeamsUpdated);
         connection.on('GameStarted', handleGameStarted);
         connection.on('QuestionSent', handleQuestionSent);
         connection.on('AnswerResult', handleAnswerResult);
@@ -208,6 +228,7 @@ function TriviaGame({ username, onLogout }) {
             connection.off('PlayerJoined', handlePlayerJoined);
             connection.off('PlayerLeft', handlePlayerLeft);
             connection.off('SettingsUpdated', handleSettingsUpdated);
+            connection.off('TeamsUpdated', handleTeamsUpdated);
             connection.off('GameStarted', handleGameStarted);
             connection.off('QuestionSent', handleQuestionSent);
             connection.off('AnswerResult', handleAnswerResult);
@@ -233,6 +254,14 @@ function TriviaGame({ username, onLogout }) {
         await connection.invoke('JoinGame', gameId.toUpperCase(), username);
     };
 
+    const assignPlayerToTeam = async (playerId, teamId) => {
+        try {
+            await connection.invoke('AssignPlayerToTeam', gameId, playerId, teamId);
+        } catch (error) {
+            console.error('Error assigning player to team:', error);
+        }
+    };
+
     const updateGameSettings = async () => {
         try {
             await connection.invoke(
@@ -241,7 +270,9 @@ function TriviaGame({ username, onLogout }) {
                 maxPlayers,
                 questionsPerGame,
                 selectedCategories,
-                selectedDifficulty
+                selectedDifficulty,
+                isTeamMode,
+                numberOfTeams
             );
             alert('Settings updated successfully!');
         } catch (error) {
@@ -259,7 +290,9 @@ function TriviaGame({ username, onLogout }) {
                 maxPlayers,
                 questionsPerGame,
                 selectedCategories,
-                selectedDifficulty
+                selectedDifficulty,
+                isTeamMode, 
+                numberOfTeams
             );
 
             // Start the game
@@ -523,17 +556,23 @@ function TriviaGame({ username, onLogout }) {
     }
 
     if (gameState === 'lobby') {
+
+        const getPlayerTeam = (playerId) => {
+            if (!isTeamMode || !teams.length) return null;
+            return teams.find(team => team.members.some(m => m.id === playerId));
+        };
+
+        const teamColors = {
+            1: { bg: '#fee2e2', border: '#ef4444', text: '#991b1b' },
+            2: { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+            3: { bg: '#d1fae5', border: '#10b981', text: '#065f46' },
+            4: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e' },
+            5: { bg: '#e9d5ff', border: '#a855f7', text: '#6b21a8' },
+            6: { bg: '#fed7aa', border: '#ea580c', text: '#9a3412' }
+        };
+
         return (
             <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px' }}>
-                    <button
-                        onClick={leaveGame}
-                        className="button button-primary"
-                    >
-                        Back to Menu
-                    </button>
-                </div >
-
                 <div className="liquid-chrome-background">
                     <LiquidChrome
                         baseColor={[0.4, 0.5, 0.9]}
@@ -545,27 +584,170 @@ function TriviaGame({ username, onLogout }) {
                     />
                 </div>
                 <div className="container" style={{ paddingTop: '100px' }}>
-                    <div className="card" style={{ maxWidth: '900px' }}>
+                    <div className="card" style={{ maxWidth: '1000px' }}>
                         <div className="header">
                             <h1>Game Lobby</h1>
                             <p>Game Code: <span className="game-code">{gameId}</span></p>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: isHost ? '1fr 2fr' : '1fr', gap: '30px' }}>
-                            {/* Players List */}
+                        {/* Team Mode Display */}
+                        {isTeamMode && teams.length > 0 && (
+                            <div style={{
+                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                padding: '16px',
+                                borderRadius: '12px',
+                                marginBottom: '20px',
+                                color: 'white',
+                                textAlign: 'center'
+                            }}>
+                                <h3 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>
+                                    🎮 Team Mode Active
+                                </h3>
+                                <p style={{ margin: 0, opacity: 0.9, fontSize: '14px' }}>
+                                    Players compete in {numberOfTeams} teams
+                                </p>
+                            </div>
+                        )}
+
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: isHost ? '1fr 2fr' : '1fr',
+                            gap: '30px'
+                        }}>
+                            {/* Players/Teams Display */}
                             <div className="section">
-                                <div className="section-header">
-                                    <Users className="icon" />
-                                    <h3>Players ({players.length}/{gameSettings.maxPlayers})</h3>
-                                </div>
-                                <div className="players-list">
-                                    {players.map((player) => (
-                                        <div key={player.id} className="player-item">
-                                            <span>{player.name}</span>
-                                            {player.id === playerId && <span className="badge">You</span>}
+                                {!isTeamMode ? (
+                                    // Free-for-all mode
+                                    <>
+                                        <div className="section-header">
+                                            <Users className="icon" />
+                                            <h3>Players ({players.length}/{gameSettings.maxPlayers})</h3>
                                         </div>
-                                    ))}
-                                </div>
+                                        <div className="players-list">
+                                            {players.map((player) => (
+                                                <div key={player.id} className="player-item">
+                                                    <span>{player.name}</span>
+                                                    {player.id === playerId && <span className="badge">You</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    // Team mode
+                                    <>
+                                        <div className="section-header">
+                                            <Users className="icon" />
+                                            <h3>Teams ({players.length}/{gameSettings.maxPlayers})</h3>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            {teams.map((team) => {
+                                                const colors = teamColors[team.id] || teamColors[1];
+                                                return (
+                                                    <div
+                                                        key={team.id}
+                                                        style={{
+                                                            background: colors.bg,
+                                                            border: `2px solid ${colors.border}`,
+                                                            borderRadius: '12px',
+                                                            padding: '16px'
+                                                        }}
+                                                    >
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'space-between',
+                                                            marginBottom: '12px'
+                                                        }}>
+                                                            <h4 style={{
+                                                                margin: 0,
+                                                                color: colors.text,
+                                                                fontSize: '16px',
+                                                                fontWeight: 'bold'
+                                                            }}>
+                                                                {team.name}
+                                                            </h4>
+                                                            <span style={{
+                                                                background: colors.border,
+                                                                color: 'white',
+                                                                padding: '4px 12px',
+                                                                borderRadius: '12px',
+                                                                fontSize: '12px',
+                                                                fontWeight: 'bold'
+                                                            }}>
+                                                                {team.memberCount} {team.memberCount === 1 ? 'player' : 'players'}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                            {team.members && team.members.length > 0 ? (
+                                                                team.members.map((member) => (
+                                                                    <div
+                                                                        key={member.id}
+                                                                        style={{
+                                                                            background: 'white',
+                                                                            padding: '8px 12px',
+                                                                            borderRadius: '6px',
+                                                                            display: 'flex',
+                                                                            justifyContent: 'space-between',
+                                                                            alignItems: 'center'
+                                                                        }}
+                                                                    >
+                                                                        <span style={{ fontWeight: '500', color: '#1a202c' }}>
+                                                                            {member.name}
+                                                                        </span>
+                                                                        {member.id === playerId && (
+                                                                            <span style={{
+                                                                                background: colors.border,
+                                                                                color: 'white',
+                                                                                padding: '2px 8px',
+                                                                                borderRadius: '9999px',
+                                                                                fontSize: '11px',
+                                                                                fontWeight: '600'
+                                                                            }}>
+                                                                                You
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div style={{
+                                                                    background: 'rgba(255,255,255,0.5)',
+                                                                    padding: '12px',
+                                                                    borderRadius: '6px',
+                                                                    textAlign: 'center',
+                                                                    color: colors.text,
+                                                                    fontSize: '13px',
+                                                                    fontStyle: 'italic'
+                                                                }}>
+                                                                    No players yet
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {/* Allow players to switch teams */}
+                                                        {getPlayerTeam(playerId)?.id !== team.id && (
+                                                            <button
+                                                                onClick={() => assignPlayerToTeam(playerId, team.id)}
+                                                                style={{
+                                                                    marginTop: '8px',
+                                                                    width: '100%',
+                                                                    padding: '8px',
+                                                                    background: colors.border,
+                                                                    color: 'white',
+                                                                    border: 'none',
+                                                                    borderRadius: '6px',
+                                                                    cursor: 'pointer',
+                                                                    fontWeight: '600',
+                                                                    fontSize: '13px'
+                                                                }}
+                                                            >
+                                                                Join This Team
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             {/* Settings Panel (Host Only) */}
@@ -575,13 +757,75 @@ function TriviaGame({ username, onLogout }) {
                                         <Settings className="icon" />
                                         <h3>Game Settings</h3>
                                     </div>
-                                    <div style={{ background: '#dbeafe', padding: '12px', borderRadius: '6px', marginBottom: '15px', fontSize: '0.875rem', color: '#1e40af' }}>
+                                    <div style={{
+                                        background: '#dbeafe',
+                                        padding: '12px',
+                                        borderRadius: '6px',
+                                        marginBottom: '15px',
+                                        fontSize: '0.875rem',
+                                        color: '#1e40af'
+                                    }}>
                                         <strong>You are the host!</strong> Configure the game settings below and click "Start Game" when ready.
                                     </div>
 
+                                    {/* Game Mode Toggle */}
+                                    <div className="form-group">
+                                        <label style={{
+                                            display: 'block',
+                                            marginBottom: '8px',
+                                            fontWeight: '600',
+                                            color: '#374151'
+                                        }}>
+                                            Game Mode:
+                                        </label>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <button
+                                                onClick={() => setIsTeamMode(false)}
+                                                className={`button ${!isTeamMode ? 'button-primary' : 'button-secondary'}`}
+                                                style={{ flex: 1 }}
+                                            >
+                                                Free-for-All
+                                            </button>
+                                            <button
+                                                onClick={() => setIsTeamMode(true)}
+                                                className={`button ${isTeamMode ? 'button-primary' : 'button-secondary'}`}
+                                                style={{ flex: 1 }}
+                                            >
+                                                Team Mode
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Number of Teams (only show in team mode) */}
+                                    {isTeamMode && (
+                                        <div className="form-group">
+                                            <label style={{
+                                                display: 'block',
+                                                marginBottom: '8px',
+                                                fontWeight: '600',
+                                                color: '#374151'
+                                            }}>
+                                                Number of Teams (2-6):
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="2"
+                                                max="6"
+                                                value={numberOfTeams}
+                                                onChange={(e) => setNumberOfTeams(parseInt(e.target.value) || 2)}
+                                                className="input"
+                                            />
+                                        </div>
+                                    )}
+
                                     {/* Max Players */}
                                     <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+                                        <label style={{
+                                            display: 'block',
+                                            marginBottom: '8px',
+                                            fontWeight: '600',
+                                            color: '#374151'
+                                        }}>
                                             Maximum Players (1-20):
                                         </label>
                                         <input
@@ -596,7 +840,12 @@ function TriviaGame({ username, onLogout }) {
 
                                     {/* Questions Per Game */}
                                     <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+                                        <label style={{
+                                            display: 'block',
+                                            marginBottom: '8px',
+                                            fontWeight: '600',
+                                            color: '#374151'
+                                        }}>
                                             Questions Per Game (5-50):
                                         </label>
                                         <input
@@ -611,7 +860,12 @@ function TriviaGame({ username, onLogout }) {
 
                                     {/* Difficulty */}
                                     <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+                                        <label style={{
+                                            display: 'block',
+                                            marginBottom: '8px',
+                                            fontWeight: '600',
+                                            color: '#374151'
+                                        }}>
                                             Maximum Difficulty:
                                         </label>
                                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -630,7 +884,12 @@ function TriviaGame({ username, onLogout }) {
 
                                     {/* Categories */}
                                     <div className="form-group">
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151' }}>
+                                        <label style={{
+                                            display: 'block',
+                                            marginBottom: '8px',
+                                            fontWeight: '600',
+                                            color: '#374151'
+                                        }}>
                                             <Filter className="icon" style={{ display: 'inline', marginRight: '5px' }} />
                                             Question Categories:
                                         </label>
@@ -662,7 +921,12 @@ function TriviaGame({ username, onLogout }) {
                                                 </button>
                                             ))}
                                         </div>
-                                        <small style={{ display: 'block', marginTop: '8px', color: '#6b7280', fontSize: '0.875rem' }}>
+                                        <small style={{
+                                            display: 'block',
+                                            marginTop: '8px',
+                                            color: '#6b7280',
+                                            fontSize: '0.875rem'
+                                        }}>
                                             Selected: {selectedCategories.length} / {availableCategories.length}
                                         </small>
                                     </div>
@@ -689,12 +953,24 @@ function TriviaGame({ username, onLogout }) {
                                         </button>
                                     </div>
                                     {players.length < 1 && (
-                                        <small style={{ display: 'block', marginTop: '10px', color: '#dc2626', textAlign: 'center', fontWeight: '500' }}>
+                                        <small style={{
+                                            display: 'block',
+                                            marginTop: '10px',
+                                            color: '#dc2626',
+                                            textAlign: 'center',
+                                            fontWeight: '500'
+                                        }}>
                                             ⚠️ Need at least 1 player in the lobby to start
                                         </small>
                                     )}
                                     {selectedCategories.length === 0 && (
-                                        <small style={{ display: 'block', marginTop: '10px', color: '#dc2626', textAlign: 'center', fontWeight: '500' }}>
+                                        <small style={{
+                                            display: 'block',
+                                            marginTop: '10px',
+                                            color: '#dc2626',
+                                            textAlign: 'center',
+                                            fontWeight: '500'
+                                        }}>
                                             ⚠️ Please select at least one category!
                                         </small>
                                     )}
@@ -704,7 +980,9 @@ function TriviaGame({ username, onLogout }) {
                             {/* Waiting Message (Non-Host) */}
                             {!isHost && (
                                 <div className="section" style={{ textAlign: 'center' }}>
-                                    <h3 style={{ color: '#1a202c', marginBottom: '20px' }}>Waiting for host to start the game...</h3>
+                                    <h3 style={{ color: '#1a202c', marginBottom: '20px' }}>
+                                        Waiting for host to start the game...
+                                    </h3>
                                     <div style={{ marginTop: '20px', textAlign: 'center' }}>
                                         <button
                                             onClick={leaveGame}
@@ -714,25 +992,73 @@ function TriviaGame({ username, onLogout }) {
                                             Leave Lobby
                                         </button>
                                     </div>
-                                    <div style={{ background: '#f7fafc', padding: '20px', borderRadius: '8px' }}>
-                                        <h4 style={{ marginBottom: '15px', color: '#667eea' }}>Current Settings:</h4>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
-                                            <div style={{ padding: '8px', background: 'white', borderRadius: '6px' }}>
+                                    <div style={{
+                                        background: '#f7fafc',
+                                        padding: '20px',
+                                        borderRadius: '8px',
+                                        marginTop: '20px'
+                                    }}>
+                                        <h4 style={{ marginBottom: '15px', color: '#667eea' }}>
+                                            Current Settings:
+                                        </h4>
+                                        <div style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '8px',
+                                            textAlign: 'left'
+                                        }}>
+                                            <div style={{
+                                                padding: '8px',
+                                                background: 'white',
+                                                borderRadius: '6px'
+                                            }}>
+                                                <strong>Game Mode:</strong> {isTeamMode ? `Team Mode (${numberOfTeams} teams)` : 'Free-for-All'}
+                                            </div>
+                                            <div style={{
+                                                padding: '8px',
+                                                background: 'white',
+                                                borderRadius: '6px'
+                                            }}>
                                                 <strong>Max Players:</strong> {maxPlayers}
                                             </div>
-                                            <div style={{ padding: '8px', background: 'white', borderRadius: '6px' }}>
+                                            <div style={{
+                                                padding: '8px',
+                                                background: 'white',
+                                                borderRadius: '6px'
+                                            }}>
                                                 <strong>Questions:</strong> {questionsPerGame}
                                             </div>
-                                            <div style={{ padding: '8px', background: 'white', borderRadius: '6px' }}>
+                                            <div style={{
+                                                padding: '8px',
+                                                background: 'white',
+                                                borderRadius: '6px'
+                                            }}>
                                                 <strong>Difficulty:</strong> {selectedDifficulty}
                                             </div>
-                                            <div style={{ padding: '8px', background: 'white', borderRadius: '6px' }}>
+                                            <div style={{
+                                                padding: '8px',
+                                                background: 'white',
+                                                borderRadius: '6px'
+                                            }}>
                                                 <strong>Categories:</strong> {selectedCategories.join(', ')}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             )}
+                        </div>
+
+                        <div style={{
+                            marginTop: '20px',
+                            textAlign: 'center'
+                        }}>
+                            <button
+                                onClick={leaveGame}
+                                className="button button-primary"
+                            >
+                                <ArrowLeft className="icon" />
+                                Back to Menu
+                            </button>
                         </div>
                     </div>
                 </div>

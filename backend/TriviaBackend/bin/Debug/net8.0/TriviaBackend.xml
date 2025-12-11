@@ -334,6 +334,18 @@
         <member name="M:TriviaBackend.Migrations.RemoveClanBadField.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:TriviaBackend.Migrations.RenameAdminField">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RenameAdminField.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RenameAdminField.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RenameAdminField.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
         <member name="T:TriviaBackend.Services.Implementations.GameEngineService">
             <summary>
             Service for processing actions and events in a match. Works together with GameHub

@@ -5,6 +5,7 @@ import LiquidChrome from './LiquidChrome';
 
 const Profile = ({ username, onBack }) => {
     const [userData, setUserData] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -27,6 +28,25 @@ const Profile = ({ username, onBack }) => {
         fetchUserData();
     }, [username]);
 
+    // Fetch current user for clan operations
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            if (!username) return;
+            try {
+                const res = await fetch(`https://localhost:5001/api/clan/getuser/${encodeURIComponent(username)}`);
+                if (res.ok) {
+                    const u = await res.json();
+                    setCurrentUser(u);
+                } else {
+                    console.error('Failed to fetch current user for clan info');
+                }
+            } catch (err) {
+                console.error('Network error loading current user:', err);
+            }
+        };
+        fetchCurrentUser();
+    }, [username]);
+
     if (loading) {
         return (
             <>
@@ -47,37 +67,21 @@ const Profile = ({ username, onBack }) => {
         );
     }
 
-    if (!userData) {
-        return (
-            <>
-                <div className="liquid-chrome-background">
-                    <LiquidChrome
-                        baseColor={[0.4, 0.5, 0.9]}
-                        speed={0.5}
-                        amplitude={0.6}
-                        frequencyX={3}
-                        frequencyY={3}
-                        interactive={false}
-                    />
-                </div>
-                <div className="container">
-                    <div className="card">
-                        <h2>Unable to load profile</h2>
-                        <button onClick={onBack} className="button button-primary">
-                            <ArrowLeft className="icon" />
-                            Back to Menu
-                        </button>
-                    </div>
-                </div>
-            </>
-        );
-    }
+    // If userData failed to load, render the normal dashboard with safe defaults
+    const safeUserData = userData ?? {
+        username: username || 'Unknown',
+        gamesPlayed: 0,
+        totalPoints: 0,
+        elo: 0,
+        rank: 0,
+        totalPlayers: 0
+    };
 
     const stats = [
-        { label: "Games Played", value: userData.gamesPlayed, icon: Target, color: "#3b82f6" },
-        { label: "Total Points", value: userData.totalPoints?.tolocalString() || '0', icon: Trophy, color: "#f59e0b" },
-        { label: "Current ELO", value: userData.elo, icon: TrendingUp, color: "#10b981" },
-        { label: "Global Rank", value: `#${userData.rank}`, icon: Award, color: "#667eea" }
+        { label: "Games Played", value: safeUserData.gamesPlayed, icon: Target, color: "#3b82f6" },
+        { label: "Total Points", value: safeUserData.totalPoints?.toLocaleString?.() ?? String(safeUserData.totalPoints || 0), icon: Trophy, color: "#f59e0b" },
+        { label: "Current ELO", value: safeUserData.elo, icon: TrendingUp, color: "#10b981" },
+        { label: "Global Rank", value: `#${safeUserData.rank}`, icon: Award, color: "#667eea" }
     ];
 
     return (
@@ -132,10 +136,10 @@ const Profile = ({ username, onBack }) => {
 
                             {/* User Info */}
                             <div style={{ flex: 1 }}>
-                                <h1 style={{ margin: '0 0 8px 0', fontSize: '32px' }}>{userData.username}</h1>
+                                <h1 style={{ margin: '0 0 8px 0', fontSize: '32px' }}>{safeUserData.username}</h1>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.9 }}>
                                     <Calendar style={{ width: '16px', height: '16px' }} />
-                                    <span>Total Players: {userData.totalPlayers}</span>
+                                    <span>Total Players: {safeUserData.totalPlayers}</span>
                                 </div>
                             </div>
                         </div>
@@ -205,8 +209,8 @@ const Profile = ({ username, onBack }) => {
                             }}>
                                 <span style={{ color: '#718096' }}>Average Score</span>
                                 <span style={{ fontWeight: 'bold', color: '#1a202c' }}>
-                                    {userData.gamesPlayed > 0
-                                        ? Math.round(userData.totalPoints / userData.gamesPlayed)
+                                    {safeUserData.gamesPlayed > 0
+                                        ? Math.round((safeUserData.totalPoints || 0) / safeUserData.gamesPlayed)
                                         : 0
                                     }
                                 </span>
@@ -220,8 +224,8 @@ const Profile = ({ username, onBack }) => {
                             }}>
                                 <span style={{ color: '#718096' }}>Rank Position</span>
                                 <span style={{ fontWeight: 'bold', color: '#667eea' }}>
-                                    Top {userData.totalPlayers > 0
-                                        ? Math.round((userData.rank / userData.totalPlayers) * 100)
+                                    Top {safeUserData.totalPlayers > 0
+                                        ? Math.round((safeUserData.rank / safeUserData.totalPlayers) * 100)
                                         : 0
                                     }%
                                 </span>
@@ -249,7 +253,7 @@ const Profile = ({ username, onBack }) => {
                         marginTop: '12px'
                     }}>
                         <h4 style={{ margin: '0 0 8px 0', color: '#1a202c' }}>Clan Admin</h4>
-                        <ClanAdmin />
+                        <ClanAdmin userId={currentUser?.id} />
                     </div>
                 </div>
             </div>
@@ -257,7 +261,7 @@ const Profile = ({ username, onBack }) => {
     );
 };
 
-const ClanAdmin = () => {
+const ClanAdmin = ({ userId }) => {
     const API_BASE = 'https://localhost:5001/api/clan';
     const [createName, setCreateName] = useState('');
     const [renameId, setRenameId] = useState('');
@@ -267,8 +271,9 @@ const ClanAdmin = () => {
 
     const handleCreate = async () => {
         if (!createName) return setMsg('Provide a name');
+        if (!userId) return setMsg('User ID not available');
         try {
-            const res = await fetch(`${API_BASE}/create/?clanName=${createName}`, {
+            const res = await fetch(`${API_BASE}/create/?clanName=${encodeURIComponent(createName)}&userId=${userId}`, {
                 method: 'POST',
             });
             if (!res.ok) {
@@ -288,8 +293,9 @@ const ClanAdmin = () => {
     const handleRename = async () => {
         const id = Number(renameId);
         if (!id || !renameName) return setMsg('Provide id and new name');
+        if (!userId) return setMsg('User ID not available');
         try {
-            const res = await fetch(`${API_BASE}/rename?clanId=${id}&newName=${renameName}`,
+            const res = await fetch(`${API_BASE}/rename?clanId=${id}&newName=${encodeURIComponent(renameName)}&userId=${userId}`,
             {
                 method: 'PATCH'
             });
@@ -310,8 +316,9 @@ const ClanAdmin = () => {
     const handleDelete = async () => {
         const id = Number(deleteId);
         if (!id) return setMsg('Provide id');
+        if (!userId) return setMsg('User ID not available');
         try {
-            const res = await fetch(`${API_BASE}/delete?clanId=${id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE}/delete?clanId=${id}&userId=${userId}`, { method: 'DELETE' });
             if (!res.ok) {
                 const t = await res.text().catch(() => '');
                 console.error('Delete failed', res.status, t);
@@ -483,7 +490,7 @@ const ClanSection = ({ username }) => {
                 return;
             }
 
-            const userId = currentUser.id || currentUser.userId || currentUser.username;
+            const userId = currentUser.id || currentUser.userId;
             const joinRes = await fetch(`${API_BASE}/join/${clanId}?userId=${userId}`, {
                 method: 'POST'
             });
@@ -552,6 +559,53 @@ const ClanSection = ({ username }) => {
 
     if (loading) return <div>Loading...</div>;
 
+    // Kick a member (POST with query params)
+    const handleKick = async (kickeeId) => {
+        if (!currentUser || !kickeeId) return;
+        if (kickeeId === (currentUser.id || currentUser.userId)) return; // don't kick self
+        setLoading(true);
+        try {
+            const adminId = currentUser.id || currentUser.userId;
+            const res = await fetch(`${API_BASE}/kick?kickeeId=${encodeURIComponent(kickeeId)}&adminId=${encodeURIComponent(adminId)}`, {
+                method: 'POST'
+            });
+            if (!res.ok) {
+                const t = await res.text().catch(() => '');
+                console.error('Kick failed', res.status, t);
+                setLoading(false);
+                return;
+            }
+            // refresh members
+            if (clan && clan.id) {
+                const mRes = await fetch(`${API_BASE}/getmembers/${clan.id}`);
+                if (mRes.ok) {
+                    const m = await mRes.json();
+                    try {
+                        const detailed = await Promise.all((m || []).map(async (mem) => {
+                            const userId = mem.id ?? mem.userId ?? mem;
+                            try {
+                                const uRes2 = await fetch(`${API_BASE}/getuser/${encodeURIComponent(userId)}`);
+                                if (uRes2.ok) return await uRes2.json();
+                                return mem;
+                            } catch (err) {
+                                console.error('Error fetching user', userId, err);
+                                return mem;
+                            }
+                        }));
+                        setMembers(detailed);
+                    } catch (err) {
+                        console.error('Error resolving member details', err);
+                        setMembers(m || []);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Network error kicking user:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (clan) {
         return (
             <div>
@@ -567,10 +621,21 @@ const ClanSection = ({ username }) => {
 
                 <div style={{ marginTop: '12px' }}>
                     <div style={{ fontWeight: 600, marginBottom: '8px' }}>Members</div>
-                    <ul style={{ margin: 0, paddingLeft: '18px' }}>
-                        {members.map((m) => (
-                            <li key={m.id || m.userId || m.username}>{m.username || m.userName || m.id}</li>
-                        ))}
+                    <ul style={{ margin: 0, paddingLeft: '0' }}>
+                        {members.map((m) => {
+                            const id = m.id || m.userId || m;
+                            const name = m.username || m.userName || id;
+                            return (
+                                <li key={id} style={{ listStyle: 'none', padding: '6px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 6 }}>
+                                    <span>{name}</span>
+                                    <div>
+                                        {id !== (currentUser.id || currentUser.userId) && (
+                                            <button type="button" class="button" onClick={() => handleKick(id)} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 10px', borderRadius: 6 }}>Kick</button>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             </div>

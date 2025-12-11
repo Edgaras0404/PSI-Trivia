@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TriviaBackend.Migrations;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services.Interfaces.DB;
 
@@ -109,9 +110,43 @@ namespace TriviaBackend.Controllers
             return Ok();
         }
 
-        [HttpPost("create")]
-        public async Task<ActionResult> CreateClan(string clanName)
+        [HttpPost("kick")]
+        public async Task<ActionResult> KickUser(string kickeeId, string adminId)
         {
+            var offender = await _UserService.GetUserByIdAsync(kickeeId);
+            var admin = await _UserService.GetUserByIdAsync(adminId);
+
+            if (offender == null || admin == null)
+                return NotFound();
+
+            if (admin is not Admin)
+                return Unauthorized("User is not an admin");
+
+            if(admin is Admin ad && !ad.CanKickUsers)
+                return Unauthorized("Managing user is not allowed to kick clan members");
+
+            if (offender.ClanId == null)
+                return BadRequest("User is not in any clan");
+
+            var clan = await _ClanService.GetClanByIdAsync(offender.ClanId.Value);
+
+            await _ClanService.RemoveMemberFromClanAsync(clan!, offender);
+            return Ok();
+        }
+
+        [HttpPost("create")]
+        public async Task<ActionResult> CreateClan(string clanName, string userId)
+        {
+            var user = await _UserService.GetUserByIdAsync(userId);
+            if (user == null)
+                return NotFound();
+
+            if (user is not Admin)
+                return Unauthorized("User is not allowed to manage clans");
+
+            if(user is Admin admin && !admin.CanManageContent)
+                return Unauthorized("User is not allowed to manage clans");
+
             if (await _ClanService.GetClanByNameAsync(clanName) != null)
                 return Conflict($"Clan already exists with the name {clanName}");
 
@@ -123,8 +158,18 @@ namespace TriviaBackend.Controllers
         }
 
         [HttpPatch("rename")]
-        public async Task<ActionResult> RenameClan(int clanId, string newName)
+        public async Task<ActionResult> RenameClan(int clanId, string newName, string userId)
         {
+            var user = await _UserService.GetUserByIdAsync(userId);
+            if (user == null)
+                return NotFound();
+
+            if (user is not Admin)
+                return Unauthorized("User is not allowed to manage clans");
+
+            if (user is Admin admin && !admin.CanManageContent)
+                return Unauthorized("User is not allowed to manage clans");
+
             var clan = await _ClanService.GetClanByIdAsync(clanId);
 
             if (clan == null)
@@ -135,8 +180,18 @@ namespace TriviaBackend.Controllers
         }
 
         [HttpDelete("delete")]
-        public async Task<ActionResult> DeleteClan(int clanId)
+        public async Task<ActionResult> DeleteClan(int clanId, string userId)
         {
+            var user = await _UserService.GetUserByIdAsync(userId);
+            if (user == null)
+                return NotFound();
+
+            if (user is not Admin)
+                return Unauthorized("User is not allowed to manage clans");
+
+            if (user is Admin admin && !admin.CanManageContent)
+                return Unauthorized("User is not allowed to manage clans");
+
             var clan = await _ClanService.GetClanByIdAsync(clanId);
 
             if (clan == null)

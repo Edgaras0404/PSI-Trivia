@@ -8,11 +8,13 @@ namespace TriviaBackend.Services.Implementations.DB
     public class ClanService(ITriviaDbContext context) : IClanService
     {
         private readonly ITriviaDbContext _context = context;
+
         public async Task<Clan?> GetClanByIdAsync(int clanId) =>
             await _context.Clans.FindAsync(clanId);
-
         public async Task<Clan?> GetClanByNameAsync(string name) =>
             await _context.Clans.FirstOrDefaultAsync(c => c.Name == name);
+        public async Task<List<BaseUser>?> GetAllClanMembersAsnyc(Clan clan) =>
+            await _context.Users.Where(u => u.ClanId == clan.Id).ToListAsync();
 
         public async Task AddMemberToClanAsync(Clan clan, BaseUser user)
         {

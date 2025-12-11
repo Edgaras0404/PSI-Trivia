@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services.Interfaces.DB;
 
@@ -13,8 +14,19 @@ namespace TriviaBackend.Controllers
     [ApiController]
     public class ClanController(IClanService _ClanService, IUserService _UserService) : Controller
     {
+        [HttpGet("getuser/{usn}")]
+        public async Task<ActionResult<BaseUser>> GetUserByName(string usn)
+        {
+            var user = await _UserService.GetUserByUsernameAsync(usn);
+
+            if(user == null)
+                return NotFound();
+
+            return Ok(user);
+        }
+
         [HttpGet("getclan/{clanId}")]
-        public async Task<ActionResult<Clan>> GetClanByID(int clanId)
+        public async Task<ActionResult<Clan>> GetClanById(int clanId)
         {
             var clan = await _ClanService.GetClanByIdAsync(clanId);
 
@@ -22,6 +34,33 @@ namespace TriviaBackend.Controllers
                 return NotFound();
 
             return Ok(clan);
+        }
+
+        [HttpGet("getclanbyname/{clanName}")]
+        public async Task<ActionResult<Clan>> GetClanByName(string clanName)
+        {
+            var clan = await _ClanService.GetClanByNameAsync(clanName);
+
+            if(clan == null)
+                return NotFound();
+
+            return Ok(clan);
+        }
+
+        [HttpGet("getmembers/{clanId}")]
+        public async Task<ActionResult<List<BaseUser>>> GetClanMembers(int clanId)
+        {
+            var clan = await _ClanService.GetClanByIdAsync(clanId);
+
+            if (clan == null)
+                return NotFound("Clan does not exist");
+
+            var members = await _ClanService.GetAllClanMembersAsnyc(clan);
+
+            if(members == null)
+                return NotFound("No members found");
+
+            return Ok(members);
         }
 
         [HttpPost("join/{clanId}")]
@@ -39,6 +78,9 @@ namespace TriviaBackend.Controllers
 
             if (user.ClanId == clan.Id)
                 return BadRequest("User is already in the clan");
+
+            if (user.ClanId != null)
+                return BadRequest("User is already in another clan");
 
             await _ClanService.AddMemberToClanAsync(clan, user);
             return Ok();
@@ -60,24 +102,27 @@ namespace TriviaBackend.Controllers
             if (user.ClanId != clan.Id)
                 return BadRequest("User is not in the clan");
 
+            if (user.ClanId == null)
+                return BadRequest("User is not in any clan");
+
             await _ClanService.RemoveMemberFromClanAsync(clan, user);    
             return Ok();
         }
 
         [HttpPost("create")]
-        public async Task<ActionResult> CreateClan(string name)
+        public async Task<ActionResult> CreateClan(string clanName)
         {
-            if (await _ClanService.GetClanByNameAsync(name) != null)
-                return Conflict($"Clan already exists with the name {name}");
+            if (await _ClanService.GetClanByNameAsync(clanName) != null)
+                return Conflict($"Clan already exists with the name {clanName}");
 
-            var clan = new Clan { Name = name };
+            var clan = new Clan { Name = clanName };
 
             await _ClanService.CreateClanAsync(clan);
 
             return Ok();
         }
 
-        [HttpPatch("renameClan")]
+        [HttpPatch("rename")]
         public async Task<ActionResult> RenameClan(int clanId, string newName)
         {
             var clan = await _ClanService.GetClanByIdAsync(clanId);

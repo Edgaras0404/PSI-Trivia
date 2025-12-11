@@ -6,6 +6,7 @@ namespace TriviaBackend.Services.Interfaces.DB
     {
         Task<Clan?> GetClanByIdAsync(int clanId);
         Task<Clan?> GetClanByNameAsync(string name);
+        Task<List<BaseUser>?> GetAllClanMembersAsnyc(Clan clan);
         Task AddMemberToClanAsync(Clan clan, BaseUser user);
         Task RemoveMemberFromClanAsync(Clan clan, BaseUser user);
         Task CreateClanAsync (Clan clan);

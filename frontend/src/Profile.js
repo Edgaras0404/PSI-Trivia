@@ -112,6 +112,7 @@ const Profile = ({ username, onBack }) => {
                         padding: '30px',
                         borderRadius: '12px',
                         marginBottom: '24px',
+                    
                         color: 'white'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -227,9 +228,360 @@ const Profile = ({ username, onBack }) => {
                             </div>
                         </div>
                     </div>
+                    {/* Clan Section */}
+                    <div style={{
+                        background: '#f7fafc',
+                        padding: '24px',
+                        borderRadius: '12px',
+                        border: '2px solid #e2e8f0',
+                        marginTop: '16px'
+                    }}>
+                        <h3 style={{ margin: '0 0 12px 0', color: '#1a202c', fontSize: '20px' }}>Join a clan</h3>
+                        <ClanSection username={username} />
+
+                    </div>
+                    {/* Clan Admin */}
+                    <div style={{
+                        background: '#f7fafc',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        border: '2px solid #e2e8f0',
+                        marginTop: '12px'
+                    }}>
+                        <h4 style={{ margin: '0 0 8px 0', color: '#1a202c' }}>Clan Admin</h4>
+                        <ClanAdmin />
+                    </div>
                 </div>
             </div>
         </>
+    );
+};
+
+const ClanAdmin = () => {
+    const API_BASE = 'https://localhost:5001/api/clan';
+    const [createName, setCreateName] = useState('');
+    const [renameId, setRenameId] = useState('');
+    const [renameName, setRenameName] = useState('');
+    const [deleteId, setDeleteId] = useState('');
+    const [msg, setMsg] = useState('');
+
+    const handleCreate = async () => {
+        if (!createName) return setMsg('Provide a name');
+        try {
+            const res = await fetch(`${API_BASE}/create/?clanName=${createName}`, {
+                method: 'POST',
+            });
+            if (!res.ok) {
+                const t = await res.text().catch(() => '');
+                console.error('Create failed', res.status, t);
+                setMsg(t || `Create failed: ${res.status}`);
+                return;
+            }
+            setMsg('Clan created');
+            setCreateName('');
+        } catch (err) {
+            console.error('Network error create clan', err);
+            setMsg('Network error');
+        }
+    };
+
+    const handleRename = async () => {
+        const id = Number(renameId);
+        if (!id || !renameName) return setMsg('Provide id and new name');
+        try {
+            const res = await fetch(`${API_BASE}/rename?clanId=${id}&newName=${renameName}`,
+            {
+                method: 'PATCH'
+            });
+            if (!res.ok) {
+                const t = await res.text().catch(() => '');
+                console.error('Rename failed', res.status, t);
+                setMsg(t || `Rename failed: ${res.status}`);
+                return;
+            }
+            setMsg('Clan renamed');
+            setRenameId(''); setRenameName('');
+        } catch (err) {
+            console.error('Network error rename clan', err);
+            setMsg('Network error');
+        }
+    };
+
+    const handleDelete = async () => {
+        const id = Number(deleteId);
+        if (!id) return setMsg('Provide id');
+        try {
+            const res = await fetch(`${API_BASE}/delete?clanId=${id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const t = await res.text().catch(() => '');
+                console.error('Delete failed', res.status, t);
+                setMsg(t || `Delete failed: ${res.status}`);
+                return;
+            }
+            setMsg('Clan deleted');
+            setDeleteId('');
+        } catch (err) {
+            console.error('Network error delete clan', err);
+            setMsg('Network error');
+        }
+    };
+
+    return (
+        <div style={{ display: 'grid', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    placeholder="New clan name"
+                    style={{ flex: 1, padding: 8, borderRadius: 6, border: 'none', outline: 'none', background: 'white' }}
+                />
+                <button
+                    type="button"
+                    className="button"
+                    onClick={handleCreate}
+                    style={{ background: '#10b981', color: 'white', border: 'none' }}
+                >
+                    Create
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                    value={renameId}
+                    onChange={(e) => setRenameId(e.target.value)}
+                    placeholder="Clan id"
+                    style={{ width: 100, padding: 8, borderRadius: 6, border: 'none', outline: 'none', background: 'white' }}
+                />
+                <input
+                    value={renameName}
+                    onChange={(e) => setRenameName(e.target.value)}
+                    placeholder="New name"
+                    style={{ flex: 1, padding: 8, borderRadius: 6, border: 'none', outline: 'none', background: 'white' }}
+                />
+                <button
+                    type="button"
+                    className="button"
+                    onClick={handleRename}
+                    style={{ background: '#f58d16ff', color: 'white', border: 'none' }}
+                >
+                    Rename
+                </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                    value={deleteId}
+                    onChange={(e) => setDeleteId(e.target.value)}
+                    placeholder="Clan id"
+                    style={{ width: 140, padding: 8, borderRadius: 6, border: 'none', outline: 'none', background: 'white' }}
+                />
+                <button
+                    type="button"
+                    className="button button-danger"
+                    onClick={handleDelete}
+                    style={{ background: '#ef4444', color: 'white', border: 'none' }}
+                >
+                    Delete
+                </button>
+            </div>
+
+            <div style={{ color: '#333', minHeight: 18 }}>{msg}</div>
+        </div>
+    );
+};
+
+const ClanSection = ({ username }) => {
+    const [clan, setClan] = useState(null);
+    const [members, setMembers] = useState([]);
+    const [joinName, setJoinName] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+
+    const API_BASE = 'https://localhost:5001/api/clan';
+
+    // load current user and their clan if exists
+    useEffect(() => {
+        const load = async () => {
+            if (!username) return;
+            setLoading(true);
+            try {
+                const uRes = await fetch(`${API_BASE}/getuser/${encodeURIComponent(username)}`);
+                if (!uRes.ok) {
+                    console.error('Failed to fetch current user for clan info');
+                    setLoading(false);
+                    return;
+                }
+                const u = await uRes.json();
+                setCurrentUser(u);
+
+                const clanId = u.clanId ?? null;
+                if (!clanId) {
+                    setClan(null);
+                    setMembers([]);
+                    setLoading(false);
+                    return;
+                }
+
+                const cRes = await fetch(`${API_BASE}/getclan/${clanId}`);
+                if (cRes.ok) {
+                    const c = await cRes.json();
+                    setClan(c);
+                } else {
+                    console.error('Failed to fetch clan');
+                }
+
+                const mRes = await fetch(`${API_BASE}/getmembers/${clanId}`);
+                if (mRes.ok) {
+                    const m = await mRes.json();
+                    try {
+                        const detailed = await Promise.all((m || []).map(async (mem) => {
+                            const userId = mem.id ?? mem.userId ?? mem;
+                            try {
+                                const uRes2 = await fetch(`${API_BASE}/getuser/${encodeURIComponent(userId)}`);
+                                if (uRes2.ok) return await uRes2.json();
+                                return mem;
+                            } catch (err) {
+                                console.error('Error fetching user', userId, err);
+                                return mem;
+                            }
+                        }));
+                        setMembers(detailed);
+                    } catch (err) {
+                        console.error('Error resolving member details', err);
+                        setMembers(m || []);
+                    }
+                } else {
+                    console.error('Failed to fetch clan members');
+                }
+            } catch (err) {
+                console.error('Network error loading clan:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, [username]);
+
+    // Join by clan name: look up clanId then call join endpoint
+    const handleJoinByName = async () => {
+        if (!joinName || !currentUser) return;
+        setLoading(true);
+        try {
+            // lookup clan by name
+            const lookupRes = await fetch(`${API_BASE}/getclanbyname/${encodeURIComponent(joinName)}`);
+            if (!lookupRes.ok) {
+                const text = await lookupRes.text().catch(() => '');
+                console.error('Lookup clan by name failed:', lookupRes.status, text);
+                setLoading(false);
+                return;
+            }
+            const found = await lookupRes.json().catch(() => null);
+            const clanId = found && (found.id ?? found.Id);
+            if (!clanId) {
+                console.error('Clan not found by name');
+                setLoading(false);
+                return;
+            }
+
+            const userId = currentUser.id || currentUser.userId || currentUser.username;
+            const joinRes = await fetch(`${API_BASE}/join/${clanId}?userId=${userId}`, {
+                method: 'POST'
+            });
+            if (!joinRes.ok) {
+                const text = await joinRes.text().catch(() => '');
+                console.error('Join clan failed:', joinRes.status, text);
+                setLoading(false);
+                return;
+            }
+
+            // refresh clan info
+            const cRes = await fetch(`${API_BASE}/getclan/${clanId}`);
+            if (cRes.ok) setClan(await cRes.json());
+            const mRes = await fetch(`${API_BASE}/getmembers/${clanId}`);
+            if (mRes.ok) {
+                const m = await mRes.json();
+                try {
+                    const detailed = await Promise.all((m || []).map(async (mem) => {
+                        const userId2 = mem.id ?? mem.userId ?? mem;
+                        try {
+                            const uRes2 = await fetch(`${API_BASE}/getuser/${encodeURIComponent(userId2)}`);
+                            if (uRes2.ok) return await uRes2.json();
+                            return mem;
+                        } catch (err) {
+                            console.error('Error fetching user', userId2, err);
+                            return mem;
+                        }
+                    }));
+                    setMembers(detailed);
+                } catch (err) {
+                    console.error('Error resolving member details', err);
+                    setMembers(m || []);
+                }
+            }
+
+            setJoinName('');
+        } catch (err) {
+            console.error('Network error joining clan by name:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLeave = async () => {
+        if (!clan || !currentUser) return;
+        setLoading(true);
+        try {
+            const userId = currentUser.id || currentUser.userId || currentUser.username;
+            const res = await fetch(`${API_BASE}/leave/${clan.id}?userId=${encodeURIComponent(userId)}`, {
+                method: 'DELETE'
+            });
+            if (!res.ok) {
+                const text = await res.text().catch(() => '');
+                console.error('Leave clan failed:', res.status, text);
+                setLoading(false);
+                return;
+            }
+            setClan(null);
+            setMembers([]);
+        } catch (err) {
+            console.error('Network error leaving clan:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) return <div>Loading...</div>;
+
+    if (clan) {
+        return (
+            <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ fontWeight: '600', fontSize: '18px' }}>{clan.name}</div>
+                        <div style={{ color: '#718096' }}>{clan.memberCount} members</div>
+                    </div>
+                    <div>
+                        <button type="button" className="button button-danger" onClick={handleLeave}>Leave</button>
+                    </div>
+                </div>
+
+                <div style={{ marginTop: '12px' }}>
+                    <div style={{ fontWeight: 600, marginBottom: '8px' }}>Members</div>
+                    <ul style={{ margin: 0, paddingLeft: '18px' }}>
+                        {members.map((m) => (
+                            <li key={m.id || m.userId || m.username}>{m.username || m.userName || m.id}</li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <input value={joinName} onChange={(e) => setJoinName(e.target.value)} placeholder="Clan name" style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+            <button type="button" className="button button-primary" onClick={handleJoinByName}>Join</button>
+        </div>
     );
 };
 

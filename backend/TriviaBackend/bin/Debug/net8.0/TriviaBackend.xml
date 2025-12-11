@@ -108,7 +108,16 @@
             <param name="playerName"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.UpdateGameSettings(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.String[],System.String)">
+        <member name="M:TriviaBackend.Hubs.GameHub.AssignPlayerToTeam(System.String,System.Int32,System.Int32)">
+            <summary>
+            Assign player to the team before starting the game
+            </summary>
+            <param name="gameId"></param>
+            <param name="playerId"></param>
+            <param name="teamId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.UpdateGameSettings(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.String[],System.String,System.Nullable{System.Boolean},System.Nullable{System.Int32})">
             <summary>
             Update game settings in the lobby before starting the game
             </summary>

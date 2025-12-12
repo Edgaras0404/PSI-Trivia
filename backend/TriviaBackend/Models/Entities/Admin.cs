@@ -3,6 +3,6 @@
     public class Admin : BaseUser
     {
         public bool CanKickUsers { get; set; } = true;
-        public bool CanEditTrivias { get; set; } = true;
+        public bool CanManageContent { get; set; } = true;
     }
 }

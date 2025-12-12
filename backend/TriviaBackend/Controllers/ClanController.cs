@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TriviaBackend.Migrations;
 using TriviaBackend.Models.Entities;
 using TriviaBackend.Services.Interfaces.DB;
 

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { Users, Trophy, Clock, ArrowLeft, Play, LogIn, Plus, LogOut, User, Settings, Filter, Notebook } from 'lucide-react';
 import Login from './Login';
 import Editor from './Editor';
@@ -7,6 +7,7 @@ import LiquidChrome from './LiquidChrome';
 import TextPressure from './TextPressure';
 import Profile from './Profile';
 import Navbar from './Navbar';
+import Countdown from './Countdown';
 
 class GameConnection {
     constructor() {
@@ -76,11 +77,19 @@ function TriviaGame({ username, onLogout }) {
     const [globalLeaderboard, setGlobalLeaderboard] = useState([]);
     const [showProfile, setShowProfile] = useState(false);
     const [isHost, setIsHost] = useState(false);
+    const [showCountdown, setShowCountdown] = useState(false)
 
     // Team mode state
     const [isTeamMode, setIsTeamMode] = useState(false);
     const [numberOfTeams, setNumberOfTeams] = useState(2);
     const [teams, setTeams] = useState([]);
+
+    const handleCountdownComplete = useCallback(() => {
+        console.log('=== COUNTDOWN COMPLETE ===');
+        console.log('Setting showCountdown to false, gameState to playing');
+        setShowCountdown(false);
+        setGameState('playing');
+    }, []);
 
     // local editor toggle inside TriviaGame
     const [showEditorLocal, setShowEditorLocal] = useState(false);
@@ -174,7 +183,7 @@ function TriviaGame({ username, onLogout }) {
 
         const handleGameStarted = () => {
             console.log('Game started');
-            setGameState('playing');
+            setShowCountdown(true);
             setShowAnswer(false);
         };
 
@@ -185,6 +194,7 @@ function TriviaGame({ username, onLogout }) {
             setAnswerResult(null);
             setShowAnswer(false);
             setTimeLeft(data.timeLimit);
+            setGameState('playing');
         };
 
         const handleAnswerResult = (data) => {
@@ -229,6 +239,7 @@ function TriviaGame({ username, onLogout }) {
             connection.off('PlayerLeft', handlePlayerLeft);
             connection.off('SettingsUpdated', handleSettingsUpdated);
             connection.off('TeamsUpdated', handleTeamsUpdated);
+            connection.off('CountdownComplete', handleCountdownComplete);
             connection.off('GameStarted', handleGameStarted);
             connection.off('QuestionSent', handleQuestionSent);
             connection.off('AnswerResult', handleAnswerResult);
@@ -236,7 +247,7 @@ function TriviaGame({ username, onLogout }) {
             connection.off('GameEnded', handleGameEnded);
             connection.off('Error', handleError);
         };
-    }, [connected, connection, availableCategories]);
+    }, [connected, connection, availableCategories, handleCountdownComplete]);
 
     useEffect(() => {
         if (timeLeft > 0 && currentQuestion && !showAnswer) {
@@ -484,6 +495,25 @@ function TriviaGame({ username, onLogout }) {
                         </button>
                     </div>
                 </div>
+            </>
+        );
+    }
+
+    if (showCountdown) {
+        console.log('=== SHOWING COUNTDOWN ===');
+        return (
+            <>
+                <div className="liquid-chrome-background">
+                    <LiquidChrome
+                        baseColor={[0.4, 0.5, 0.9]}
+                        speed={0.5}
+                        amplitude={0.6}
+                        frequencyX={3}
+                        frequencyY={3}
+                        interactive={false}
+                    />
+                </div>
+                <Countdown onComplete={handleCountdownComplete} />
             </>
         );
     }
@@ -1197,8 +1227,7 @@ function TriviaGame({ username, onLogout }) {
                 </div>
             </>
         );
-    }
-
+    }    
     return null;
 }
 

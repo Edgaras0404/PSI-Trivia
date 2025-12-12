@@ -57,6 +57,7 @@ namespace TriviaBackend
 
             if (!builder.Environment.IsEnvironment("Test"))
             {
+                builder.Configuration.AddEnvironmentVariables();
                 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
                 builder.Services.AddDbContext<TriviaDbContext>(options =>
                     options.UseNpgsql(connectionString));
@@ -84,6 +85,8 @@ namespace TriviaBackend
                 using var scope = app.Services.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<TriviaDbContext>();
                 db.Database.EnsureCreated();
+                //Automatically apply ef migrations
+                db.Database.Migrate();
             }
 
             var hubContext = app.Services.GetRequiredService<IHubContext<GameHub>>();

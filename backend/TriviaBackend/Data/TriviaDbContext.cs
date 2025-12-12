@@ -11,6 +11,7 @@ namespace TriviaBackend.Data
     {
         public DbSet<TriviaQuestion> Questions { get; set; }
         public DbSet<BaseUser> Users { get; set; }
+        public DbSet<Clan> Clans { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

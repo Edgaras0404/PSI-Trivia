@@ -7,6 +7,7 @@ namespace TriviaBackend.Data
     {
         DbSet<TriviaQuestion> Questions { get; }
         DbSet<BaseUser> Users { get; }
+        DbSet<Clan> Clans { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }

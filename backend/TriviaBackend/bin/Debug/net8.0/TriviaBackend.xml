@@ -39,6 +39,20 @@
             <param name="request"></param>
             <returns></returns>
         </member>
+        <member name="T:TriviaBackend.Controllers.ClanController">
+            <summary>
+            Controller for handling actions related to clans
+            </summary>
+            <param name="_ClanService"></param>
+            <param name="_UserService"></param>
+        </member>
+        <member name="M:TriviaBackend.Controllers.ClanController.#ctor(TriviaBackend.Services.Interfaces.DB.IClanService,TriviaBackend.Services.Interfaces.DB.IUserService)">
+            <summary>
+            Controller for handling actions related to clans
+            </summary>
+            <param name="_ClanService"></param>
+            <param name="_UserService"></param>
+        </member>
         <member name="T:TriviaBackend.Controllers.EditorController">
             <summary>
             Controller for managing trivia question editing
@@ -94,7 +108,16 @@
             <param name="playerName"></param>
             <returns></returns>
         </member>
-        <member name="M:TriviaBackend.Hubs.GameHub.UpdateGameSettings(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.String[],System.String)">
+        <member name="M:TriviaBackend.Hubs.GameHub.AssignPlayerToTeam(System.String,System.Int32,System.Int32)">
+            <summary>
+            Assign player to the team before starting the game
+            </summary>
+            <param name="gameId"></param>
+            <param name="playerId"></param>
+            <param name="teamId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:TriviaBackend.Hubs.GameHub.UpdateGameSettings(System.String,System.Nullable{System.Int32},System.Nullable{System.Int32},System.String[],System.String,System.Nullable{System.Boolean},System.Nullable{System.Int32})">
             <summary>
             Update game settings in the lobby before starting the game
             </summary>
@@ -294,6 +317,42 @@
             <inheritdoc />
         </member>
         <member name="M:TriviaBackend.Migrations.AddTotalPointsToPlayer.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.Clans">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.Clans.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.Clans.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.Clans.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.RemoveClanBadField">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RemoveClanBadField.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RemoveClanBadField.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RemoveClanBadField.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:TriviaBackend.Migrations.RenameAdminField">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RenameAdminField.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RenameAdminField.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:TriviaBackend.Migrations.RenameAdminField.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
         <member name="T:TriviaBackend.Services.Implementations.GameEngineService">

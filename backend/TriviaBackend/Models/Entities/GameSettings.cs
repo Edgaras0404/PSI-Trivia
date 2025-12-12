@@ -10,5 +10,9 @@ namespace TriviaBackend.Models.Entities
         public bool AllowLateJoining { get; set; } = false;
         public QuestionCategory[] QuestionCategories { get; set; } = Enum.GetValues<QuestionCategory>();
         public DifficultyLevel MaxDifficulty { get; set; } = DifficultyLevel.Hard;
+
+        // team mode settings
+        public bool IsTeamMode { get; set; } = false;
+        public int NumberOfTeams { get; set; } = 2;
     }
 }

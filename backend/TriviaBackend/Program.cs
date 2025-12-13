@@ -47,7 +47,8 @@ namespace TriviaBackend
                 {
                     policy.WithOrigins(
                         "http://localhost:3000", //front http
-                        "https://localhost:3001" //front https
+                        "https://localhost:3001", //front https
+                         "https://localhost:5001"
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()
@@ -57,6 +58,7 @@ namespace TriviaBackend
 
             if (!builder.Environment.IsEnvironment("Test"))
             {
+                builder.Configuration.AddEnvironmentVariables();
                 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
                 builder.Services.AddDbContext<TriviaDbContext>(options =>
                     options.UseNpgsql(connectionString));
@@ -84,6 +86,8 @@ namespace TriviaBackend
                 using var scope = app.Services.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<TriviaDbContext>();
                 db.Database.EnsureCreated();
+                //Automatically apply ef migrations
+                db.Database.Migrate();
             }
 
             var hubContext = app.Services.GetRequiredService<IHubContext<GameHub>>();
@@ -103,6 +107,12 @@ namespace TriviaBackend
             app.UseAuthorization();
             app.MapControllers();
             app.MapHub<GameHub>("/gamehub");
+
+            app.UseDefaultFiles();  // serve index.html by default
+            app.UseStaticFiles();   // serve static files from wwwroot
+
+            // Fallback any non-API routes to index.html for React Router
+            app.MapFallbackToFile("index.html");
 
             app.Run();
         }

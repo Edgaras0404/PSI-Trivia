@@ -11,7 +11,7 @@ const Profile = ({ username, onBack }) => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await fetch(`https://localhost:5001/api/leaderboard/rank/${username}`);
+                const response = await fetch(`/api/leaderboard/rank/${username}`);
                 if (response.ok) {
                     const data = await response.json();
                     setUserData(data);
@@ -33,7 +33,7 @@ const Profile = ({ username, onBack }) => {
         const fetchCurrentUser = async () => {
             if (!username) return;
             try {
-                const res = await fetch(`https://localhost:5001/api/clan/getuser/${encodeURIComponent(username)}`);
+                const res = await fetch(`/api/clan/getuser/${encodeURIComponent(username)}`);
                 if (res.ok) {
                     const u = await res.json();
                     setCurrentUser(u);
@@ -262,7 +262,7 @@ const Profile = ({ username, onBack }) => {
 };
 
 const ClanAdmin = ({ userId }) => {
-    const API_BASE = 'https://localhost:5001/api/clan';
+    const API_BASE = '/api/clan';
     const [createName, setCreateName] = useState('');
     const [renameId, setRenameId] = useState('');
     const [renameName, setRenameName] = useState('');
@@ -404,7 +404,7 @@ const ClanSection = ({ username }) => {
     const [loading, setLoading] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
 
-    const API_BASE = 'https://localhost:5001/api/clan';
+    const API_BASE = '/api/clan';
 
     // load current user and their clan if exists
     useEffect(() => {

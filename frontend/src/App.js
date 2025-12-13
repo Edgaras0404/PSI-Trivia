@@ -9,6 +9,10 @@ import Profile from './Profile';
 import Navbar from './Navbar';
 import Countdown from './Countdown';
 
+const hubUrl = process.env.NODE_ENV === "development"
+    ? "https://localhost:5001/gamehub"
+    : "/gamehub";
+
 class GameConnection {
     constructor() {
         this.connection = null;
@@ -113,7 +117,7 @@ function TriviaGame({ username, onLogout }) {
 
     useEffect(() => {
         const initConnection = async () => {
-            const success = await connection.connect('https://localhost:5001/gamehub');
+            const success = await connection.connect(hubUrl);
             setConnected(success);
         };
         initConnection();
@@ -348,7 +352,7 @@ function TriviaGame({ username, onLogout }) {
     const fetchGlobalLeaderboard = async () => {
         try {
             console.log('Fetching global leaderboard...');
-            const response = await fetch('https://localhost:5001/api/leaderboard/global?top=100');
+            const response = await fetch('/api/leaderboard/global?top=100');
             console.log('Response status:', response.status);
             console.log('Response ok:', response.ok);
 

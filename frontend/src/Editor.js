@@ -51,7 +51,7 @@ const Editor = ({ onHome, onEditor, onLogout, fetchGlobalLeaderboard, onProfileC
         return arr.slice(0, 4);
     };
 
-    const API_BASE = 'https://localhost:5001/api/Editor';
+    const API_BASE = '/api/Editor';
 
     const apiGetQuestion = async (id) => {
         const url = `${API_BASE}/getquestion/${id}`;

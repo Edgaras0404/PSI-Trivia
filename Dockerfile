@@ -9,8 +9,9 @@ RUN npm run build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS backend-build
 WORKDIR /app
 COPY backend .
-COPY --from=frontend /app/frontend/dist ./wwwroot
-RUN dotnet publish -c Release -o out
+COPY --from=frontend /app/frontend/build ./wwwroot
+WORKDIR /app/TriviaBackend
+RUN dotnet publish -c Release -o /app/out
 
 # ----- Final runtime -----
 FROM mcr.microsoft.com/dotnet/aspnet:8.0

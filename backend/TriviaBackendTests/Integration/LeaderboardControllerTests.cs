@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System.Net;
 using TriviaBackend.Controllers;
 using TriviaBackend.Exceptions;
 using TriviaBackend.Models.Entities;

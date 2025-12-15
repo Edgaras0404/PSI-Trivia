@@ -317,5 +317,91 @@ namespace TriviaBackendTests.Integration
             // Assert
             Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
         }
+        [Test]
+        public async Task KickUser_AsAdmin_ReturnsOk()
+        {
+            // Arrange - create admin, elevate and clan
+            var adminRegister = await _client.PostAsJsonAsync("/api/auth/register", new BaseUserDTO
+            {
+                Username = "kickAdmin",
+                Password = "Password123!"
+            });
+            var admin = await adminRegister.Content.ReadFromJsonAsync<BaseUser>();
+            await _client.PostAsJsonAsync($"/api/auth/elevate-to-admin?Id={admin!.Id}", new { });
+            await _client.PostAsync($"/api/clan/create?clanName=KickClan&userId={admin.Id}", null);
+
+            // create player and join
+            var playerRegister = await _client.PostAsJsonAsync("/api/auth/register", new BaseUserDTO
+            {
+                Username = "playerToKick",
+                Password = "Password123!"
+            });
+            var player = await playerRegister.Content.ReadFromJsonAsync<BaseUser>();
+
+            var clanResponse = await _client.GetAsync("/api/clan/getclanbyname/KickClan");
+            var clan = await clanResponse.Content.ReadFromJsonAsync<Clan>();
+
+            await _client.PostAsync($"/api/clan/join/{clan!.Id}?userId={player!.Id}", null);
+
+            // Act
+            var response = await _client.PostAsync($"/api/clan/kick?kickeeId={player.Id}&adminId={admin.Id}", null);
+
+            // Assert
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+        }
+
+        [Test]
+        public async Task KickUser_AsNonAdmin_ReturnsUnauthorized()
+        {
+            // Arrange - create two regular players
+            var p1 = await _client.PostAsJsonAsync("/api/auth/register", new BaseUserDTO { Username = "notAdmin1", Password = "Password123!" });
+            var player1 = await p1.Content.ReadFromJsonAsync<BaseUser>();
+
+            var p2 = await _client.PostAsJsonAsync("/api/auth/register", new BaseUserDTO { Username = "notAdmin2", Password = "Password123!" });
+            var player2 = await p2.Content.ReadFromJsonAsync<BaseUser>();
+
+            // Act - attempt to kick using non-admin player as adminId
+            var response = await _client.PostAsync($"/api/clan/kick?kickeeId={player2!.Id}&adminId={player1!.Id}", null);
+
+            // Assert
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        }
+
+        [Test]
+        public async Task GetMembers_ExistingClan_ReturnsOk()
+        {
+            // Arrange - create admin, clan and two players who join
+            var adminRegister = await _client.PostAsJsonAsync("/api/auth/register", new BaseUserDTO
+            {
+                Username = "membersAdmin",
+                Password = "Password123!"
+            });
+            var admin = await adminRegister.Content.ReadFromJsonAsync<BaseUser>();
+            await _client.PostAsJsonAsync($"/api/auth/elevate-to-admin?Id={admin!.Id}", new { });
+            await _client.PostAsync($"/api/clan/create?clanName=MembersClan&userId={admin.Id}", null);
+
+            var playerAReg = await _client.PostAsJsonAsync("/api/auth/register", new BaseUserDTO { Username = "memberA", Password = "Password123!" });
+            var playerA = await playerAReg.Content.ReadFromJsonAsync<BaseUser>();
+            var playerBReg = await _client.PostAsJsonAsync("/api/auth/register", new BaseUserDTO { Username = "memberB", Password = "Password123!" });
+            var playerB = await playerBReg.Content.ReadFromJsonAsync<BaseUser>();
+
+            var clanResponse = await _client.GetAsync("/api/clan/getclanbyname/MembersClan");
+            var clan = await clanResponse.Content.ReadFromJsonAsync<Clan>();
+
+            await _client.PostAsync($"/api/clan/join/{clan!.Id}?userId={playerA!.Id}", null);
+            await _client.PostAsync($"/api/clan/join/{clan.Id}?userId={playerB!.Id}", null);
+
+            // Act
+            var response = await _client.GetAsync($"/api/clan/getmembers/{clan.Id}");
+
+            // Assert
+            Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
+            var members = await response.Content.ReadFromJsonAsync<List<BaseUser>>();
+            Assert.That(members, Is.Not.Null);
+            Assert.That(members!.Count, Is.EqualTo(2));
+            var usernames = members.Select(m => m.Username).ToList();
+            Assert.That(usernames, Does.Contain("memberA"));
+            Assert.That(usernames, Does.Contain("memberB"));
+        }
     }
 }

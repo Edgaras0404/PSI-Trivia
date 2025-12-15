@@ -166,6 +166,8 @@ namespace TriviaBackend.Hubs
         /// <param name="questionsPerGame"></param>
         /// <param name="categories"></param>
         /// <param name="maxDifficulty"></param>
+        /// <param name="isTeamMode"></param>
+        /// <param name="numberOfTeams"></param>
         /// <returns></returns>
         public async Task UpdateGameSettings(string gameId, int? maxPlayers = null, int? questionsPerGame = null,
             string[]? categories = null, string? maxDifficulty = null, bool? isTeamMode = null, int? numberOfTeams = null)

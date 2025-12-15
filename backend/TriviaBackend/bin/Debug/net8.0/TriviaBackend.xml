@@ -81,7 +81,7 @@
         </member>
         <member name="M:TriviaBackend.Controllers.LeaderboardController.UpdatePlayerStats(TriviaBackend.Models.Entities.PlayerStatsUpdate)">
             <summary>
-            Update the elo of a player and increase GamesPlayed. If the player is admin, nothing is changed
+            Update the elo of a player and increase GamesPlayed
             </summary>
             <param name="statsUpdate"></param>
             <returns></returns>
@@ -126,6 +126,8 @@
             <param name="questionsPerGame"></param>
             <param name="categories"></param>
             <param name="maxDifficulty"></param>
+            <param name="isTeamMode"></param>
+            <param name="numberOfTeams"></param>
             <returns></returns>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.JoinGame(System.String,System.String)">

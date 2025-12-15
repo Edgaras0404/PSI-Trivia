@@ -682,7 +682,14 @@ namespace TriviaBackend.Hubs
 
             var finalLeaderboard = gameEngine.GetCurrentGameLeaderboard();
 
-            await UpdatePlayerStats(gameId, finalLeaderboard);
+            try
+            {
+                await UpdatePlayerStats(gameId, finalLeaderboard);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to update player stats for game {gameId}: {ex.Message}");
+            }
 
             await _staticHubContext.Clients.Group(gameId).SendAsync("GameEnded", new
             {

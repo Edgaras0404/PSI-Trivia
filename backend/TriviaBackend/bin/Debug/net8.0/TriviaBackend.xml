@@ -81,7 +81,7 @@
         </member>
         <member name="M:TriviaBackend.Controllers.LeaderboardController.UpdatePlayerStats(TriviaBackend.Models.Entities.PlayerStatsUpdate)">
             <summary>
-            Update the elo of a player and increase GamesPlayed
+            Update the elo of a player and increase GamesPlayed. If the player is admin, nothing is changed
             </summary>
             <param name="statsUpdate"></param>
             <returns></returns>

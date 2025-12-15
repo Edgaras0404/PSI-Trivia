@@ -88,6 +88,9 @@ function TriviaGame({ username, onLogout }) {
     const [numberOfTeams, setNumberOfTeams] = useState(2);
     const [teams, setTeams] = useState([]);
 
+    const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0);
+    const [totalQuestions, setTotalQuestions] = useState(10);
+
     const handleCountdownComplete = useCallback(() => {
         console.log('=== COUNTDOWN COMPLETE ===');
         console.log('Setting showCountdown to false, gameState to playing');
@@ -189,6 +192,8 @@ function TriviaGame({ username, onLogout }) {
             console.log('Game started');
             setShowCountdown(true);
             setShowAnswer(false);
+            setTotalQuestions(questionsPerGame);
+            setCurrentQuestionNumber(0);
         };
 
         const handleQuestionSent = (data) => {
@@ -198,6 +203,7 @@ function TriviaGame({ username, onLogout }) {
             setAnswerResult(null);
             setShowAnswer(false);
             setTimeLeft(data.timeLimit);
+            setCurrentQuestionNumber(prev => prev + 1);
             setGameState('playing');
         };
 
@@ -209,12 +215,27 @@ function TriviaGame({ username, onLogout }) {
         const handleQuestionRevealed = (data) => {
             console.log('Question revealed:', data);
             setShowAnswer(true);
-            setLeaderboard(data.leaderboard);
+            const modifiedLeaderboard = data.leaderboard.map(p => {
+                if (p.Name === 'admin') {
+                    return { ...p, score: '', correctAnswers: '' };
+                }
+                return p;
+            });
+            setLeaderboard(modifiedLeaderboard);
+            if (currentQuestionNumber === totalQuestions) {
+                setGameState('results');
+            }
         };
 
         const handleGameEnded = (data) => {
             console.log('Game ended:', data);
-            setLeaderboard(data.leaderboard);
+            const modifiedLeaderboard = data.leaderboard.map(p => {
+                if (p.Name === 'admin') {
+                    return { ...p, score: '', correctAnswers: '' };
+                }
+                return p;
+            });
+            setLeaderboard(modifiedLeaderboard);
             setGameState('results');
         };
 
@@ -320,7 +341,21 @@ function TriviaGame({ username, onLogout }) {
     const submitAnswer = async (index) => {
         if (selectedAnswer !== null) return;
         setSelectedAnswer(index);
-        await connection.invoke('SubmitAnswer', gameId, playerId, index);
+        try {
+            await connection.invoke('SubmitAnswer', gameId, playerId, index);
+        } catch (error) {
+            console.error('Error submitting answer:', error);
+            if (currentQuestionNumber === totalQuestions) {
+                const blankLeaderboard = players.map(p => ({
+                    Id: p.id,
+                    Name: p.name,
+                    score: p.name === 'admin' ? '' : 0,
+                    correctAnswers: p.name === 'admin' ? '' : 0
+                }));
+                setLeaderboard(blankLeaderboard);
+                setGameState('results');
+            }
+        }
     };
 
     const leaveGame = async () => {
@@ -347,6 +382,8 @@ function TriviaGame({ username, onLogout }) {
         setSelectedDifficulty('Hard');
         setMaxPlayers(10);
         setQuestionsPerGame(10);
+        setCurrentQuestionNumber(0);
+        setTotalQuestions(10);
     };
 
     const fetchGlobalLeaderboard = async () => {
@@ -884,7 +921,7 @@ function TriviaGame({ username, onLogout }) {
                                         </label>
                                         <input
                                             type="number"
-                                            min="5"
+                                            min="2"
                                             max="50"
                                             value={questionsPerGame}
                                             onChange={(e) => setQuestionsPerGame(parseInt(e.target.value) || 5)}

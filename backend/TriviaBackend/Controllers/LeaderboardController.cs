@@ -9,7 +9,7 @@ namespace TriviaBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class LeaderboardController(IPlayerService _PlayerService, ILogger<ExceptionHandler> _logger) : ControllerBase
+    public class LeaderboardController(IPlayerService _PlayerService, IUserService _UserService, ILogger<ExceptionHandler> _logger) : ControllerBase
     {
         /// <summary>
         /// Get global ranking of players by elo
@@ -70,16 +70,33 @@ namespace TriviaBackend.Controllers
         }
 
         /// <summary>
-        /// Update the elo of a player and increase GamesPlayed
+        /// Update the elo of a player and increase GamesPlayed. If the player is admin, nothing is changed
         /// </summary>
         /// <param name="statsUpdate"></param>
         /// <returns></returns>
         [HttpPost("update-stats")]
         public async Task<ActionResult> UpdatePlayerStats([FromBody] PlayerStatsUpdate statsUpdate)
         {
-            var player = await _PlayerService.GetPlayerByUsernameAsync(statsUpdate.Username);
+            var user = await _UserService.GetUserByUsernameAsync(statsUpdate.Username);
 
-            if (player == null)
+            _logger.LogError($"Testing user");
+            if (user is Player)
+            {
+                _logger.LogError($"IS player OK");
+            }
+
+            if (user is Admin)
+            {
+                _logger.LogError($"IS admin OK");
+                return Ok(new PlayerStatsUpdateResult
+                (
+                    Username: user.Username,
+                    NewElo: 0,
+                    TotalGames: 0
+                ));
+            }
+
+            if (user is not Player player)
             {
                 _logger.LogError("ERROR: Player not found");
                 return NotFound("Player not found");

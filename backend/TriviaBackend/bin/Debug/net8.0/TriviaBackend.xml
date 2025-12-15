@@ -126,6 +126,8 @@
             <param name="questionsPerGame"></param>
             <param name="categories"></param>
             <param name="maxDifficulty"></param>
+            <param name="isTeamMode"></param>
+            <param name="numberOfTeams"></param>
             <returns></returns>
         </member>
         <member name="M:TriviaBackend.Hubs.GameHub.JoinGame(System.String,System.String)">

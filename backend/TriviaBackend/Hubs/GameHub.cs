@@ -166,6 +166,8 @@ namespace TriviaBackend.Hubs
         /// <param name="questionsPerGame"></param>
         /// <param name="categories"></param>
         /// <param name="maxDifficulty"></param>
+        /// <param name="isTeamMode"></param>
+        /// <param name="numberOfTeams"></param>
         /// <returns></returns>
         public async Task UpdateGameSettings(string gameId, int? maxPlayers = null, int? questionsPerGame = null,
             string[]? categories = null, string? maxDifficulty = null, bool? isTeamMode = null, int? numberOfTeams = null)
@@ -682,7 +684,14 @@ namespace TriviaBackend.Hubs
 
             var finalLeaderboard = gameEngine.GetCurrentGameLeaderboard();
 
-            await UpdatePlayerStats(gameId, finalLeaderboard);
+            try
+            {
+                await UpdatePlayerStats(gameId, finalLeaderboard);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to update player stats for game {gameId}: {ex.Message}");
+            }
 
             await _staticHubContext.Clients.Group(gameId).SendAsync("GameEnded", new
             {
